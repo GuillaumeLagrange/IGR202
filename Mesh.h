@@ -1,12 +1,12 @@
 // --------------------------------------------------------------------------
 // Copyright(C) 2009-2016
 // Tamy Boubekeur
-// 
-// Permission granted to use this code only for teaching projects and 
+//
+// Permission granted to use this code only for teaching projects and
 // private practice.
 //
-// Do not distribute this code outside the teaching assignements.                                                                           
-// All rights reserved.                                                       
+// Do not distribute this code outside the teaching assignements.
+// All rights reserved.
 // --------------------------------------------------------------------------
 
 #pragma once
@@ -33,7 +33,7 @@ public:
 
 	/// Loads the mesh from a <file>.off
 	void loadOFF (const std::string & filename);
-    
+
     /// Compute smooth per-vertex normals
     void recomputeNormals ();
 

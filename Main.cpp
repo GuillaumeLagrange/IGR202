@@ -30,7 +30,7 @@ using namespace std;
 
 static const unsigned int DEFAULT_SCREENWIDTH = 1024;
 static const unsigned int DEFAULT_SCREENHEIGHT = 768;
-static const string DEFAULT_MESH_FILE ("models/killeroo.off");
+static const string DEFAULT_MESH_FILE ("models/man.off");
 
 static const string appTitle ("Informatique Graphique & Realite Virtuelle - Travaux Pratiques - Algorithmes de Rendu");
 static const string myName ("your name");
@@ -85,35 +85,86 @@ void init (const char * modelFilename) {
     }
 
     lightSources.push_back(LightSource(1,0,0));
-		lightSources.back().setColor(0.f,1.f,0.f);
+	lightSources.back().setColor(0.f,1.f,0.f);
 
-		lightSources.push_back(LightSource(-1,0,0));
-		lightSources.back().setColor(1.f,0.f,0.f);
-
-		lightSources.push_back(LightSource(0,-1,0.5));
-		lightSources.back().setColor(0.5,0.5,0.5);
+//	lightSources.push_back(LightSource(-1,0,0));
+//	lightSources.back().setColor(1.f,0.f,0.f);
+//
+//	lightSources.push_back(LightSource(0,-1,0.5));
+//	lightSources.back().setColor(0.5,0.5,0.5);
 }
 
 // EXERCISE : the following color response shall be replaced with a proper reflectance evaluation/shadow test/etc.
-void updatePerVertexColorResponse () {
-		std::vector<Vec3f> newColor;
-		newColor.resize(colorResponses.size());
+
+void lambertBRDF()
+{
+	/* Declaration */
+	std::vector<Vec3f> newColor;
+	Vec3f normal;
+	Vec3f lightDirection;
+	Vec3f color;
+
+	float response;
+	float attenuation;
+
+	newColor.resize(colorResponses.size());
+
   	for (unsigned int i = 0; i < colorResponses.size (); i++) {
-			/* Lambert BRDF */
-			Vec3f normal = mesh.normals()[i];
-			for (vector<LightSource>::iterator it = lightSources.begin(); it != lightSources.end(); it ++) {
-				Vec3f direction = normalize(mesh.positions()[i] - (*it).getPosition());
-				float response = dot(mesh.normals()[i], direction);
-				Vec3f color = (*it).getColor();
-				float attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
-				newColor[i] += attenuation * Vec3f(color[0]*response, color[1]*response, color[2]*response);
-	    	}
-			}
-		colorResponses = newColor;
+		/* Lambert BRDF */
+		normal = mesh.normals()[i];
+		for (vector<LightSource>::iterator it = lightSources.begin(); it != lightSources.end(); it ++) {
+			lightDirection = normalize(mesh.positions()[i] - (*it).getPosition());
+			response = dot(mesh.normals()[i], lightDirection);
+			color = (*it).getColor();
+			attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
+			newColor[i] += attenuation * Vec3f(color[0]*response, color[1]*response, color[2]*response);
+	    }
+	}
+	colorResponses = newColor;
+}
+
+void blinnPhongBRDF()
+{
+	/* Declarations */
+	std::vector<Vec3f> newColor;
+	Vec3f normal;
+	Vec3f cameraPos;
+	Vec3f lightDirection;
+	Vec3f cameraDirection;
+	Vec3f halfDirection;
+	Vec3f color;
+	vector<LightSource>::iterator it;
+
+	float response;
+	float attenuation;
+
+	newColor.resize(colorResponses.size());
+
+  	for (unsigned int i = 0; i < colorResponses.size (); i++) {
+		/* Blinn Phong BRDF */
+		normal = mesh.normals()[i];
+		camera.getPos(cameraPos);
+		cameraDirection = normalize(cameraPos - mesh.positions()[i]);
+		for (it = lightSources.begin(); it != lightSources.end(); it ++) {
+			lightDirection = normalize(mesh.positions()[i]
+					- (*it).getPosition());
+			halfDirection = (lightDirection + cameraDirection)/
+				((lightDirection + cameraDirection).length());
+			response = dot(mesh.normals()[i], halfDirection);
+//			std::cout << response << endl;
+			color = (*it).getColor();
+			attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
+			newColor[i] += attenuation * Vec3f(color[0]*response, color[1]*response, color[2]*response);
+	    }
+	}
+}
+
+void updatePerVertexColorResponse () {
+	blinnPhongBRDF();
 }
 
 void renderScene () {
-    updatePerVertexColorResponse ();
+	updatePerVertexColorResponse ();
     glVertexPointer (3, GL_FLOAT, sizeof (Vec3f), (GLvoid*)(&(mesh.positions()[0])));
     glNormalPointer (GL_FLOAT, 3*sizeof (float), (GLvoid*)&(mesh.normals()[0]));
     glColorPointer (3, GL_FLOAT, sizeof (Vec3f), (GLvoid*)(&(colorResponses[0])));
