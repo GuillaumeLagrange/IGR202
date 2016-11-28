@@ -183,7 +183,7 @@ void cook()
 	newColor.resize(colorResponses.size());
 
   	for (unsigned int i = 0; i < colorResponses.size (); i++) {
-		/* Blinn Phong BRDF */
+		/* Cook BRDF */
 		normal = mesh.normals()[i];
 		camera.getPos(cameraPos);
 		cameraDirection = normalize(cameraPos - mesh.positions()[i]);
@@ -199,6 +199,51 @@ void cook()
 				response = min(1.f, ombrage);
 			else
 				response = min(1.f, masquage);
+			color = (*it).getColor();
+			attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
+			newColor[i] += attenuation * Vec3f(color[0]*response, color[1]*response, color[2]*response);
+	    }
+	}
+	colorResponses = newColor;
+}
+
+float gSchlick(Vec3f normal, Vec3f w, float alpha)
+{
+	float k = alpha * sqrt(2/M_PI);
+	float temp = dot (normal, w);
+	return temp/(temp*(1-k)+k);
+}
+
+void ggx()
+{
+	/* Declarations */
+	std::vector<Vec3f> newColor;
+	Vec3f normal;
+	Vec3f cameraPos;
+	Vec3f lightDirection;
+	Vec3f cameraDirection;
+	Vec3f halfDirection;
+	Vec3f color;
+	vector<LightSource>::iterator it;
+
+	float response;
+	float attenuation;
+	float alpha = 0.0;
+
+	newColor.resize(colorResponses.size());
+
+  	for (unsigned int i = 0; i < colorResponses.size (); i++) {
+		/* GGX, schlock approx BRDF */
+		normal = mesh.normals()[i];
+		camera.getPos(cameraPos);
+		cameraDirection = normalize(cameraPos - mesh.positions()[i]);
+		for (it = lightSources.begin(); it != lightSources.end(); it ++) {
+			lightDirection = normalize(mesh.positions()[i]
+					- (*it).getPosition());
+			halfDirection = (lightDirection + cameraDirection)/
+				((lightDirection + cameraDirection).length());
+			response = gSchlick(normal, lightDirection, alpha)
+				* gSchlick(normal, cameraDirection, alpha);
 			color = (*it).getColor();
 			attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
 			newColor[i] += attenuation * Vec3f(color[0]*response, color[1]*response, color[2]*response);
