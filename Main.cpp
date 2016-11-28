@@ -96,7 +96,8 @@ void init (const char * modelFilename) {
 
 // EXERCISE : the following color response shall be replaced with a proper reflectance evaluation/shadow test/etc.
 
-void lambertBRDF()
+/* Question 1*/
+void lambert()
 {
 	/* Declaration */
 	std::vector<Vec3f> newColor;
@@ -123,7 +124,8 @@ void lambertBRDF()
 	colorResponses = newColor;
 }
 
-void blinnPhongBRDF()
+/* Question 4*/
+void blinnPhong()
 {
 	/* Declarations */
 	std::vector<Vec3f> newColor;
@@ -159,8 +161,55 @@ void blinnPhongBRDF()
 	colorResponses = newColor;
 }
 
+/* Question 5*/
+void cook()
+{
+	/* Declarations */
+	std::vector<Vec3f> newColor;
+	Vec3f normal;
+	Vec3f cameraPos;
+	Vec3f lightDirection;
+	Vec3f cameraDirection;
+	Vec3f halfDirection;
+	Vec3f color;
+	vector<LightSource>::iterator it;
+
+	float response;
+	float attenuation;
+	float ombrage;
+	float masquage;
+	float w0wh;
+
+	newColor.resize(colorResponses.size());
+
+  	for (unsigned int i = 0; i < colorResponses.size (); i++) {
+		/* Blinn Phong BRDF */
+		normal = mesh.normals()[i];
+		camera.getPos(cameraPos);
+		cameraDirection = normalize(cameraPos - mesh.positions()[i]);
+		for (it = lightSources.begin(); it != lightSources.end(); it ++) {
+			lightDirection = normalize(mesh.positions()[i]
+					- (*it).getPosition());
+			halfDirection = (lightDirection + cameraDirection)/
+				((lightDirection + cameraDirection).length());
+			w0wh = dot(cameraDirection, halfDirection);
+			ombrage = 2*dot(normal,halfDirection)*dot(normal,lightDirection)/w0wh;
+			masquage = 2*dot(normal,halfDirection)*dot(normal,cameraDirection)/w0wh;
+			if (ombrage < masquage)
+				response = min(1.f, ombrage);
+			else
+				response = min(1.f, masquage);
+			color = (*it).getColor();
+			attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
+			newColor[i] += attenuation * Vec3f(color[0]*response, color[1]*response, color[2]*response);
+	    }
+	}
+	colorResponses = newColor;
+}
+
+
 void updatePerVertexColorResponse () {
-	blinnPhongBRDF();
+	cook();
 }
 
 void renderScene () {
