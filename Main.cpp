@@ -87,11 +87,11 @@ void init (const char * modelFilename) {
     lightSources.push_back(LightSource(1,0,0));
 	lightSources.back().setColor(0.f,1.f,0.f);
 
-//	lightSources.push_back(LightSource(-1,0,0));
-//	lightSources.back().setColor(1.f,0.f,0.f);
-//
-//	lightSources.push_back(LightSource(0,-1,0.5));
-//	lightSources.back().setColor(0.5,0.5,0.5);
+	lightSources.push_back(LightSource(-1,0,0));
+	lightSources.back().setColor(1.f,0.f,0.f);
+
+	lightSources.push_back(LightSource(0,-1,0.5));
+	lightSources.back().setColor(0.5,0.5,0.5);
 }
 
 // EXERCISE : the following color response shall be replaced with a proper reflectance evaluation/shadow test/etc.
@@ -151,12 +151,12 @@ void blinnPhongBRDF()
 			halfDirection = (lightDirection + cameraDirection)/
 				((lightDirection + cameraDirection).length());
 			response = dot(mesh.normals()[i], halfDirection);
-//			std::cout << response << endl;
 			color = (*it).getColor();
 			attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
 			newColor[i] += attenuation * Vec3f(color[0]*response, color[1]*response, color[2]*response);
 	    }
 	}
+	colorResponses = newColor;
 }
 
 void updatePerVertexColorResponse () {
