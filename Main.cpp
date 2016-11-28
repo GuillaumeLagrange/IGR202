@@ -162,50 +162,77 @@ void blinnPhong()
 }
 
 /* Question 5*/
+float fresnel(float f0, Vec3f wh, Vec3f wi)
+{
+	return f0 + (1-f0)*pow((1-max(0.f, dot(wi,wh))),5);
+}
+
+float dCook(Vec3f n, Vec3f w, float alpha)
+{
+	float ex = (dot(n, w)*dot(n, w) -1)/(alpha*alpha*dot(n, w)*dot(n, w));
+	return exp(ex)/(M_PI*alpha*alpha*pow(dot(n,w),4));
+}
+
+float gCook(Vec3f n, Vec3f wh, Vec3f wi, Vec3f w0)
+{
+	float ombrage;
+	float masquage;
+	float w0wh;
+
+	w0wh = dot(w0,wh);
+	ombrage = 2*dot(n,wh)*dot(n,wi)/w0wh;
+	masquage = 2*dot(n,wh)*dot(n,w0)/w0wh;
+
+	if (ombrage < masquage)
+		return std::min(1.f, ombrage);
+	else
+		return std::min(1.f, masquage);
+}
+
 void cook()
 {
 	/* Declarations */
 	std::vector<Vec3f> newColor;
-	Vec3f normal;
+	Vec3f n;
 	Vec3f cameraPos;
-	Vec3f lightDirection;
-	Vec3f cameraDirection;
-	Vec3f halfDirection;
+	Vec3f wi;
+	Vec3f w0;
+	Vec3f wh;
 	Vec3f color;
 	vector<LightSource>::iterator it;
 
 	float response;
 	float attenuation;
-	float ombrage;
-	float masquage;
-	float w0wh;
+	float f;
+	float d;
+	float g;
+
+	float alpha = 0.5;
+	float f0 = 0.2;
 
 	newColor.resize(colorResponses.size());
 
   	for (unsigned int i = 0; i < colorResponses.size (); i++) {
 		/* Cook BRDF */
-		normal = mesh.normals()[i];
+		n = mesh.normals()[i];
 		camera.getPos(cameraPos);
-		cameraDirection = normalize(cameraPos - mesh.positions()[i]);
+		w0 = normalize(cameraPos - mesh.positions()[i]);
 		for (it = lightSources.begin(); it != lightSources.end(); it ++) {
-			lightDirection = normalize(mesh.positions()[i]
-					- (*it).getPosition());
-			halfDirection = (lightDirection + cameraDirection)/
-				((lightDirection + cameraDirection).length());
-			w0wh = dot(cameraDirection, halfDirection);
-			ombrage = 2*dot(normal,halfDirection)*dot(normal,lightDirection)/w0wh;
-			masquage = 2*dot(normal,halfDirection)*dot(normal,cameraDirection)/w0wh;
-			if (ombrage < masquage)
-				response = min(1.f, ombrage);
-			else
-				response = min(1.f, masquage);
+			wi = normalize(mesh.positions()[i] - (*it).getPosition());
+			wh = (wi + w0)/((wi + w0).length());
+			f = fresnel(f0, wh, wi);
+			d = dCook(n, wh, alpha);
+			g = (n, wh, wi, w0, alpha);
+			response = d * f * g / (4 * dot(n, wi) * dot(n, w0));
 			color = (*it).getColor();
 			attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
-			newColor[i] += attenuation * Vec3f(color[0]*response, color[1]*response, color[2]*response);
+			newColor[i] += 3 * attenuation
+				* Vec3f(color[0]*response, color[1]*response, color[2]*response);
 	    }
 	}
 	colorResponses = newColor;
 }
+
 
 float gSchlick(Vec3f normal, Vec3f w, float alpha)
 {
@@ -228,7 +255,7 @@ void ggx()
 
 	float response;
 	float attenuation;
-	float alpha = 0.0;
+	float alpha = 0.5;
 
 	newColor.resize(colorResponses.size());
 
