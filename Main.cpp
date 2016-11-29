@@ -199,9 +199,9 @@ void cook()
 	Vec3f color;
 	vector<LightSource>::iterator it;
 
-	float fre;
-	float attenuation;
 	float f;
+	float attenuation;
+	float f_s;
 	float d;
 	float g;
 
@@ -218,13 +218,13 @@ void cook()
 		for (it = lightSources.begin(); it != lightSources.end(); it ++) {
 			wi = normalize(mesh.positions()[i] - (*it).getPosition());
 			wh = normalize(wi + w0);
-			fre = fresnel(f0, wh, wi);
+			f = fresnel(f0, wh, wi);
 			d = dCook(n, wh, alpha);
 			g = gCook(n, wh, wi, w0);
-			f = d * fre * g / (4 * dot(n, wi) * dot(n, w0));
+			f_s = d * f * g / (4 * dot(n, wi) * dot(n, w0));
 			color = (*it).getColor();
 			attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
-			newColor[i] += attenuation * dot(n, wi) * f
+			newColor[i] += attenuation * dot(n, wi) * f_s
 				* Vec3f(color[0], color[1], color[2]);
 	    }
 	}
@@ -257,9 +257,9 @@ void ggx()
 	Vec3f color;
 	vector<LightSource>::iterator it;
 
-	float fre;
-	float attenuation;
 	float f;
+	float attenuation;
+	float f_s;
 	float d;
 	float g;
 
@@ -276,13 +276,13 @@ void ggx()
 		for (it = lightSources.begin(); it != lightSources.end(); it ++) {
 			wi = normalize(mesh.positions()[i] - (*it).getPosition());
 			wh = normalize(wi + w0);
-			fre = fresnel(f0, wh, wi);
+			f = fresnel(f0, wh, wi);
 			d = dGGX(n, wh, alpha);
 			g = gGGX(n, wh, alpha);
-			f = d * fre * g / (4 * dot(n, wi) * dot(n, w0));
+			f_s = d * f * g / (4 * dot(n, wi) * dot(n, w0));
 			color = (*it).getColor();
 			attenuation = 1/((mesh.positions()[i] - (*it).getPosition()).squaredLength());
-			newColor[i] += attenuation * dot(n, wi) * f
+			newColor[i] += attenuation * dot(n, wi) * f_s
 				* Vec3f(color[0], color[1], color[2]);
 	    }
 	}
