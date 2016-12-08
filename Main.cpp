@@ -30,10 +30,10 @@ using namespace std;
 
 static const unsigned int DEFAULT_SCREENWIDTH = 1024;
 static const unsigned int DEFAULT_SCREENHEIGHT = 768;
-static const string DEFAULT_MESH_FILE ("models/rhino.off");
+static const string DEFAULT_MESH_FILE ("models/man.off");
 
 static const string appTitle ("Informatique Graphique & Realite Virtuelle - Travaux Pratiques - Algorithmes de Rendu");
-static const string myName ("your name");
+static const string myName ("Guillaume Lagrange");
 static GLint window;
 static unsigned int FPS = 0;
 static bool fullScreen = false;
@@ -291,7 +291,7 @@ void ggx()
 
 
 void updatePerVertexColorResponse () {
-	cook();
+//	cook();
 }
 
 void renderScene () {
