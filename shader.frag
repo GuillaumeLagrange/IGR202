@@ -29,6 +29,8 @@ varying vec4 C; // fragment-wise normal
 
 const vec3 kd = vec3(KD_VALUE);
 const vec3 matAlbedo = vec3(ALBEDO_VALUE);
+const float alpha = ALPHA_VALUE;
+const float f0 = F0_VALUE;
 
 LightSource lightSources[LIGHT_NUMBER];
 vec3 diffuse = vec3(0.0, 0.0, 0.0);
@@ -38,6 +40,9 @@ float fresnel(vec3 wh, vec3 wi);
 float dCook(vec3 n, vec3 w);
 float gCook(vec3 n, vec3 wh, vec3 wi, vec3 wo);
 void cook();
+float gGGX(vec3, vec3);
+float dGGX(vec3, vec3);
+void ggx();
 
 void main (void) {
     gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0);
@@ -90,8 +95,6 @@ void cook()
 
 
 	/* Model parameters */
-	float alpha = ALPHA_VALUE;
-	float f0 = F0_VALUE;
 
 	for(int i = 0; i < LIGHT_NUMBER; i++){
 		vec3 lightPos = vec3(gl_ModelViewMatrix * lightSources[i].pos);
@@ -111,6 +114,53 @@ void cook()
 		float f = fresnel(wh, wi);
 		float d = dCook(n, wh);
 		float g = gCook(n, wh, wi, wo);
+		float f_s = d * f * g / (4.0 * dot(n, wi) * dot(n,wo));
+		spec += attenuation * lightSources[i].intensity * dot(n, wi)
+			* f_s * lightColor;
+	}
+}
+
+
+float gGGX(vec3 n, vec3 w)
+{
+	float k = alpha * sqrt(2.0 / M_PI);
+	float temp = dot(n, w);
+	return temp/(temp*(1.0-k)+k);
+}
+
+float dGGX(vec3 n, vec3 wh)
+{
+	float temp = 1.0 + (alpha*alpha - 1.0) * dot(n, wh) * dot(n,wh);
+	return alpha*alpha/(M_PI*temp*temp);
+}
+
+void ggx()
+{
+    vec3 p = vec3 (gl_ModelViewMatrix * P);
+    vec3 n = normalize (gl_NormalMatrix * N);
+    vec3 wo = normalize (-p);
+
+
+	/* Model parameters */
+
+	for(int i = 0; i < LIGHT_NUMBER; i++){
+		vec3 lightPos = vec3(gl_ModelViewMatrix * lightSources[i].pos);
+		vec3 wi = normalize(p - lightPos);
+		vec3 wh = normalize(wi + wo);
+		vec3 lightColor = vec3(lightSources[i].color);
+
+		/* Attenuation */
+		float attenuation = 1.0/(length(p - lightPos) * length(p - lightPos));
+
+		/* Diffuse */
+		vec3 f_d = kd/M_PI;
+		diffuse += attenuation * lightSources[i].intensity *
+			lightColor * dot(n, wi)* matAlbedo * f_d;
+
+		/* Specular */
+		float f = fresnel(wh, wi);
+		float d = dGGX(n, wh);
+		float g = gGGX(n, wi) * gGGX(n, wo);
 		float f_s = d * f * g / (4.0 * dot(n, wi) * dot(n,wo));
 		spec += attenuation * lightSources[i].intensity * dot(n, wi)
 			* f_s * lightColor;
