@@ -14,10 +14,8 @@
 #define ALPHA_VALUE 0.5
 #define F0_VALUE 0.2
 #define M_PI 3.14159265359
-
-varying vec4 P; // fragment-wise position
-varying vec3 N; // fragment-wise normal
-varying vec4 C; // fragment-wise normal
+#define KD_VALUE 1.0,1.0,1.0
+#define ALBEDO_VALUE 0.6,0.6,0.6
 
 struct LightSource {
 	vec4 pos;
@@ -25,53 +23,40 @@ struct LightSource {
 	float intensity;
 };
 
+varying vec4 P; // fragment-wise position
+varying vec3 N; // fragment-wise normal
+varying vec4 C; // fragment-wise normal
+
+const vec3 kd = vec3(KD_VALUE);
+const vec3 matAlbedo = vec3(ALBEDO_VALUE);
+
+LightSource lightSources[LIGHT_NUMBER];
+vec3 diffuse = vec3(0.0, 0.0, 0.0);
+vec3 spec = vec3(0.0, 0.0, 0.0);
+
 float fresnel(vec3 wh, vec3 wi);
 float dCook(vec3 n, vec3 w);
 float gCook(vec3 n, vec3 wh, vec3 wi, vec3 wo);
-
+void cook();
 
 void main (void) {
     gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0);
 
-	LightSource lightSources[LIGHT_NUMBER];
-
 	lightSources[0].pos = vec4(1.0, 0.0, 0.0, 1.0);
 	lightSources[0].color = vec4(1.0, 0.0, 0.0, 1.0);
-	lightSources[0].intensity = 2.0;
+	lightSources[0].intensity = 0.8;
 
-	lightSources[1].pos = vec4(0.0, 1.0, 0.0, 1.0);
+	lightSources[1].pos = vec4(0.0, 1.5, 0.0, 1.0);
 	lightSources[1].color = vec4(0.0, 1.0, 0.0, 1.0);
-	lightSources[1].intensity = 2.0;
+	lightSources[1].intensity = 0.8;
 
 	lightSources[2].pos = vec4(0.0, 0.0, 1.0, 1.0);
 	lightSources[2].color = vec4(0.0, 0.0, 1.0, 1.0);
-	lightSources[2].intensity = 2.0;
+	lightSources[2].intensity = 0.8;
 
-    vec3 p = vec3 (gl_ModelViewMatrix * P);
-    vec3 n = normalize (gl_NormalMatrix * N);
-    vec3 v = normalize (-p);
+	cook();
 
-    vec4 color = C;
-
-	vec3 camPos = vec3(gl_ModelViewMatrix *  gl_ModelViewMatrixInverse[3]);
-	vec3 wo = normalize(camPos - p);
-
-	float alpha = ALPHA_VALUE;
-	float f0 = F0_VALUE;
-
-	for(int i = 0; i < LIGHT_NUMBER; i++){
-		vec3 lightPos = vec3(gl_ModelViewMatrix * lightSources[i].pos);
-		vec3 wi = normalize(p - lightPos);
-		vec3 wh = normalize(wi + wo);
-
-		float f = fresnel(wh, wi);
-		float d = dCook(n, wh);
-		float g = gCook(n, wh, wi, wo);
-		float f_s = d * f * g / (4.0 * dot(n, wi) * dot(n,wo));
-		float attenuation = 1.0/(length(p - lightPos) * length(p - lightPos));
-		color += attenuation * lightSources[i].intensity * dot(n, wi) * f_s
-			* lightSources[i].color;
-	}
+	vec4 color = vec4((spec + diffuse), 1.0);
 
     gl_FragColor += color;
 }
@@ -91,8 +76,43 @@ float dCook(vec3 n, vec3 w)
 
 float gCook(vec3 n, vec3 wh, vec3 wi, vec3 wo)
 {
-	float ombrage = 2.0*dot(n, wh)*dot(n, wi)/dot(wo, wh);
+	float ombrage = 2.0 * dot(n, wh) * dot(n, wi) / dot(wo, wh);
 	float masquage = 2.0 * dot(n, wh) * dot(n, wo) / dot(wo, wh);
 
 	return min(1, min(masquage, ombrage));
+}
+
+void cook()
+{
+    vec3 p = vec3 (gl_ModelViewMatrix * P);
+    vec3 n = normalize (gl_NormalMatrix * N);
+    vec3 wo = normalize (-p);
+
+
+	/* Model parameters */
+	float alpha = ALPHA_VALUE;
+	float f0 = F0_VALUE;
+
+	for(int i = 0; i < LIGHT_NUMBER; i++){
+		vec3 lightPos = vec3(gl_ModelViewMatrix * lightSources[i].pos);
+		vec3 wi = normalize(p - lightPos);
+		vec3 wh = normalize(wi + wo);
+		vec3 lightColor = vec3(lightSources[i].color);
+
+		/* Attenuation */
+		float attenuation = 1.0/(length(p - lightPos) * length(p - lightPos));
+
+		/* Diffuse */
+		vec3 f_d = kd/M_PI;
+		diffuse += attenuation * lightSources[i].intensity *
+			lightColor * matAlbedo * dot(n, wi);
+
+		/* Specular */
+		float f = fresnel(wh, wi);
+		float d = dCook(n, wh);
+		float g = gCook(n, wh, wi, wo);
+		float f_s = d * f * g / (4.0 * dot(n, wi) * dot(n,wo));
+		spec += attenuation * lightSources[i].intensity * dot(n, wi)
+			* f_s * lightColor;
+	}
 }
