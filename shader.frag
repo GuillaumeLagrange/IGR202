@@ -105,7 +105,7 @@ void cook()
 		/* Diffuse */
 		vec3 f_d = kd/M_PI;
 		diffuse += attenuation * lightSources[i].intensity *
-			lightColor * matAlbedo * dot(n, wi);
+			lightColor * dot(n, wi)* matAlbedo * f_d;
 
 		/* Specular */
 		float f = fresnel(wh, wi);
