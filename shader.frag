@@ -11,11 +11,7 @@
 // Then, use uniform variables and set them from the CPU program.
 
 #define LIGHT_NUMBER 3
-#define ALPHA_VALUE 0.5
-#define F0_VALUE 0.2
 #define M_PI 3.14159265359
-#define KD_VALUE 1.0,1.0,1.0
-#define ALBEDO_VALUE 0.6,0.6,0.6
 
 struct LightSource {
 	vec4 pos;
@@ -27,10 +23,11 @@ varying vec4 P; // fragment-wise position
 varying vec3 N; // fragment-wise normal
 varying vec4 C; // fragment-wise normal
 
-const vec3 kd = vec3(KD_VALUE);
-const vec3 matAlbedo = vec3(ALBEDO_VALUE);
-const float alpha = ALPHA_VALUE;
-const float f0 = F0_VALUE;
+uniform vec3 kd;
+uniform vec3 matAlbedo;
+uniform float alpha;
+uniform float f0;
+uniform int brdf_mode;
 
 LightSource lightSources[LIGHT_NUMBER];
 vec3 diffuse = vec3(0.0, 0.0, 0.0);
@@ -59,7 +56,10 @@ void main (void) {
 	lightSources[2].color = vec4(0.0, 0.0, 1.0, 1.0);
 	lightSources[2].intensity = 0.8;
 
-	cook();
+	if (brdf_mode == 0)
+		cook();
+	else if (brdf_mode == 1)
+		ggx();
 
 	vec4 color = vec4((spec + diffuse), 1.0);
 
@@ -68,13 +68,11 @@ void main (void) {
 
 float fresnel(vec3 wh, vec3 wi)
 {
-	float f0 = F0_VALUE;
 	return f0 + (1.0-f0)*pow((1.0-max(0.0, dot(wi,wh))),5);
 }
 
 float dCook(vec3 n, vec3 w)
 {
-	float alpha = ALPHA_VALUE;
 	float ex = (dot(n, w)*dot(n, w) - 1.0)/(alpha*alpha*dot(n, w)*dot(n, w));
 	return (exp(ex))/(M_PI*alpha*alpha*pow(dot(n,w),4));
 }
