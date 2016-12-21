@@ -14,9 +14,8 @@ Ray::Ray(Vec3f _origin, Vec3f _direction)
 	direction = _direction;
 }
 
-std::vector<float> Ray::rayTriangleInter(Vec3f p0, Vec3f p1, Vec3f p2)
+bool Ray::rayTriangleInter(Vec3f p0, Vec3f p1, Vec3f p2)
 {
-	std::vector<float> inter;
 	Vec3f e0 = p1 - p0;
 	Vec3f e1 = p2 - p0;
 	Vec3f n = normalize(cross(e0, e1));
@@ -24,7 +23,7 @@ std::vector<float> Ray::rayTriangleInter(Vec3f p0, Vec3f p1, Vec3f p2)
 	float a = dot(e0, q);
 
 	if (dot(n, direction) >= 0 || std::abs(a) < 0.001)
-		return inter;
+		return false;
 
 	Vec3f s = (origin - p0) / a;
 	Vec3f r = cross(s, e0);
@@ -33,14 +32,12 @@ std::vector<float> Ray::rayTriangleInter(Vec3f p0, Vec3f p1, Vec3f p2)
 	float b2 = 1.f - b0 - b1;
 
 	if (b0 < 0 || b1 < 0 || b2 < 0)
-		return inter;
+		return false;
 
 	float t = dot(e1, r);
 
-	if (t >= 0) {
-		inter.push_back(b0);
-		inter.push_back(b1);
-		inter.push_back(b2);
-		inter.push_back(t);
-	}
+	if (t >= 0)
+		return true;
+
+	return false;
 }

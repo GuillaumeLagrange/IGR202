@@ -46,6 +46,12 @@ public:
     
     inline unsigned int operator[] (unsigned int i) const { return m_v[i]; }
 
+	bool contains(unsigned int i) {
+		return (i == m_v[0])
+			|| (i == m_v[1])
+			|| (i == m_v[2]);
+	}
+
 private:
     unsigned int m_v[3];
 };

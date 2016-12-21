@@ -25,6 +25,7 @@
 #include "GLProgram.h"
 #include "Exception.h"
 #include "LightSource.h"
+#include "Ray.h"
 
 using namespace std;
 
@@ -34,7 +35,7 @@ using namespace std;
 #define ALBEDO 0.6,0.6,0.6
 #define COOK_MODE 0
 #define GGX_MODE 1
-#define LIGHT_POS 0.0,0.0,-1.0
+#define LIGHT_POS 1.0,0.0,0.0
 
 static const unsigned int DEFAULT_SCREENWIDTH = 1024;
 static const unsigned int DEFAULT_SCREENHEIGHT = 768;
@@ -53,9 +54,9 @@ GLProgram * glProgram;
 GLuint vertexVBO;
 GLuint indexVBO;
 GLuint normalVBO;
+GLuint colorVBO;
 
-static std::vector<Vec3f> colorResponses; // Cached per-vertex color response, updated at each frame
-static std::vector<LightSource> lightSources;
+static std::vector<float> colorResponses; // Cached per-vertex color response, updated at each frame
 
 void printUsage () {
 	std::cerr << std::endl
@@ -72,6 +73,29 @@ void printUsage () {
          << " q, <esc>: Quit" << std::endl << std::endl;
 }
 
+/* This function updates the shadow value in colorResponses */
+void calcShadow()
+{
+	Vec3f lightPos = Vec3f(LIGHT_POS);
+	std::vector<Vec3f> positions = mesh.positions();
+	std::vector<Triangle> triangles = mesh.triangles();
+	for (unsigned int i = 0; i < positions.size(); i++) {
+		Ray ray = Ray(positions[i], lightPos - positions[i]);
+		colorResponses[4*i+3] = 1.0;
+		for (unsigned int j = 0; j<triangles.size(); j++) {
+			if (!triangles[j].contains(i)) {
+				int i0 = triangles[j][0];
+				int i1 = triangles[j][1];
+				int i2 = triangles[j][2];
+				if (ray.rayTriangleInter(positions[i0], positions[i1],
+							positions[i2])) {
+					colorResponses[4*i+3] = 0.0;
+					break;
+				}
+			}
+		}
+	}
+}
 
 void init (const char * modelFilename) {
     glewExperimental = GL_TRUE;
@@ -87,7 +111,7 @@ void init (const char * modelFilename) {
 	glLineWidth (2.0); // Set the width of edges in GL_LINE polygon mode
     glClearColor (0.0f, 0.0f, 0.0f, 1.0f); // Background color
 	mesh.loadOFF (modelFilename);
-    colorResponses.resize (mesh.positions ().size ());
+    colorResponses.resize (4 * mesh.positions ().size ());
     camera.resize (DEFAULT_SCREENWIDTH, DEFAULT_SCREENHEIGHT);
     try {
         glProgram = GLProgram::genVFProgram ("Simple GL Program", "shader.vert", "shader.frag"); // Load and compile pair of shaders
@@ -97,15 +121,6 @@ void init (const char * modelFilename) {
         cerr << e.msg () << endl;
     }
 
-    lightSources.push_back(LightSource(1,0,0));
-	lightSources.back().setColor(0.f,1.f,0.f);
-
-	lightSources.push_back(LightSource(-1,0,0));
-	lightSources.back().setColor(1.f,0.f,0.f);
-
-	lightSources.push_back(LightSource(0,0,1));
-	lightSources.back().setColor(1.f,1.f,1.f);
-
 	/* Material constants */
 	glProgram->setUniform3f("kd", KD);
 	glProgram->setUniform3f("matAlbedo", ALBEDO);
@@ -114,7 +129,8 @@ void init (const char * modelFilename) {
 	glProgram->setUniform1f("f0", FZERO);
 	glProgram->setUniform1i("brdf_mode", GGX_MODE);
 
-	Vec3f lightPos = Vec3f(LIGHT_POS);
+	/* Shadows calculation */
+	calcShadow();
 
 	/* VBO setup */
 	glGenBuffers(1, &vertexVBO);
@@ -131,19 +147,19 @@ void init (const char * modelFilename) {
 	glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
 	glBufferData(GL_ARRAY_BUFFER, mesh.normals().size() * sizeof(Vec3f),
 			&(mesh.normals()[0]), GL_STATIC_DRAW);
-}
 
-void updatePerVertexColorResponse () {
+	glGenBuffers(1, &colorVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+	glBufferData(GL_ARRAY_BUFFER, colorResponses.size() * sizeof(float),
+			&(colorResponses[0]), GL_STATIC_DRAW);
 }
 
 void renderScene () {
-	updatePerVertexColorResponse ();
-//    glVertexPointer (3, GL_FLOAT, sizeof (Vec3f), (GLvoid*)(&(mesh.positions()[0])));
-//    glNormalPointer (GL_FLOAT, 3*sizeof (float), (GLvoid*)&(mesh.normals()[0]));
-    glColorPointer (3, GL_FLOAT, sizeof(Vec3f), (GLvoid*)(&(colorResponses[0])));
-//    glDrawElements (GL_TRIANGLES, 3*mesh.triangles().size(), GL_UNSIGNED_INT, (GLvoid*)((&mesh.triangles()[0])));
+    glColorPointer (4, GL_FLOAT, 0, (GLvoid*)(&(colorResponses[0])));
+
 	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
 	glVertexPointer(3, GL_FLOAT, 0, 0);
+
 	glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
 	glNormalPointer(GL_FLOAT, 0, 0);
 

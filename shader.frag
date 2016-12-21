@@ -22,6 +22,7 @@ struct LightSource {
 varying vec4 P; // fragment-wise position
 varying vec3 N; // fragment-wise normal
 varying vec4 C; // fragment-wise normal
+varying float shadow;
 
 uniform vec3 kd;
 uniform vec3 matAlbedo;
@@ -57,10 +58,11 @@ void main (void) {
 	lightSources[2].color = vec4(0.0, 0.0, 1.0, 1.0);
 	lightSources[2].intensity = 3.0;
 
-	if (brdf_mode == 0)
-		cook();
-	else if (brdf_mode == 1)
-		ggx();
+	if (shadow == 1.0)
+		if (brdf_mode == 0)
+			cook();
+		else if (brdf_mode == 1)
+			ggx();
 
 	vec4 color = vec4((spec + diffuse), 1.0);
 //	vec4 color = vec4( diffuse, 1.0);

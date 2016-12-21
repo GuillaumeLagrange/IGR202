@@ -11,5 +11,5 @@ private :
 public :
 	Ray();
 	Ray(Vec3f, Vec3f);
-	std::vector<float> rayTriangleInter(Vec3f, Vec3f, Vec3f);
+	bool rayTriangleInter(Vec3f, Vec3f, Vec3f);
 };
