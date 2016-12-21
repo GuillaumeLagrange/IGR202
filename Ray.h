@@ -6,10 +6,10 @@
 class Ray {
 private :
 	Vec3f origin;
-	Vec3f position;
+	Vec3f direction;
 
 public :
 	Ray();
 	Ray(Vec3f, Vec3f);
-	std::vector<float> rayTriangleInter (Vec3f, Vec3f, Vec3f);
+	std::vector<float> rayTriangleInter(Vec3f, Vec3f, Vec3f);
 };

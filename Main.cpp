@@ -34,10 +34,11 @@ using namespace std;
 #define ALBEDO 0.6,0.6,0.6
 #define COOK_MODE 0
 #define GGX_MODE 1
+#define LIGHT_POS 0.0,0.0,-1.0
 
 static const unsigned int DEFAULT_SCREENWIDTH = 1024;
 static const unsigned int DEFAULT_SCREENHEIGHT = 768;
-static const string DEFAULT_MESH_FILE ("models/monkey.off");
+static const string DEFAULT_MESH_FILE ("models/man.off");
 
 static const string appTitle ("Informatique Graphique & Realite Virtuelle - Travaux Pratiques - Algorithmes de Rendu");
 static const string myName ("Guillaume Lagrange");
@@ -48,6 +49,10 @@ static bool fullScreen = false;
 static Camera camera;
 static Mesh mesh;
 GLProgram * glProgram;
+
+GLuint vertexVBO;
+GLuint indexVBO;
+GLuint normalVBO;
 
 static std::vector<Vec3f> colorResponses; // Cached per-vertex color response, updated at each frame
 static std::vector<LightSource> lightSources;
@@ -66,6 +71,7 @@ void printUsage () {
          << " <drag>+<middle button>: zoom" << std::endl
          << " q, <esc>: Quit" << std::endl << std::endl;
 }
+
 
 void init (const char * modelFilename) {
     glewExperimental = GL_TRUE;
@@ -103,9 +109,28 @@ void init (const char * modelFilename) {
 	/* Material constants */
 	glProgram->setUniform3f("kd", KD);
 	glProgram->setUniform3f("matAlbedo", ALBEDO);
+	glProgram->setUniform3f("lightPos", LIGHT_POS);
 	glProgram->setUniform1f("alpha", ALPHA);
 	glProgram->setUniform1f("f0", FZERO);
-	glProgram->setUniform1i("brdf_mode", COOK_MODE);
+	glProgram->setUniform1i("brdf_mode", GGX_MODE);
+
+	Vec3f lightPos = Vec3f(LIGHT_POS);
+
+	/* VBO setup */
+	glGenBuffers(1, &vertexVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+	glBufferData(GL_ARRAY_BUFFER, mesh.positions().size() * sizeof(Vec3f),
+			&(mesh.positions()[0]), GL_STATIC_DRAW);
+
+	glGenBuffers(1, &indexVBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.triangles().size() * sizeof(Triangle),
+			&(mesh.triangles()[0]), GL_STATIC_DRAW);
+
+	glGenBuffers(1, &normalVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+	glBufferData(GL_ARRAY_BUFFER, mesh.normals().size() * sizeof(Vec3f),
+			&(mesh.normals()[0]), GL_STATIC_DRAW);
 }
 
 void updatePerVertexColorResponse () {
@@ -113,10 +138,17 @@ void updatePerVertexColorResponse () {
 
 void renderScene () {
 	updatePerVertexColorResponse ();
-    glVertexPointer (3, GL_FLOAT, sizeof (Vec3f), (GLvoid*)(&(mesh.positions()[0])));
-    glNormalPointer (GL_FLOAT, 3*sizeof (float), (GLvoid*)&(mesh.normals()[0]));
-    glColorPointer (3, GL_FLOAT, sizeof (Vec3f), (GLvoid*)(&(colorResponses[0])));
-    glDrawElements (GL_TRIANGLES, 3*mesh.triangles().size(), GL_UNSIGNED_INT, (GLvoid*)((&mesh.triangles()[0])));
+//    glVertexPointer (3, GL_FLOAT, sizeof (Vec3f), (GLvoid*)(&(mesh.positions()[0])));
+//    glNormalPointer (GL_FLOAT, 3*sizeof (float), (GLvoid*)&(mesh.normals()[0]));
+    glColorPointer (3, GL_FLOAT, sizeof(Vec3f), (GLvoid*)(&(colorResponses[0])));
+//    glDrawElements (GL_TRIANGLES, 3*mesh.triangles().size(), GL_UNSIGNED_INT, (GLvoid*)((&mesh.triangles()[0])));
+	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+	glVertexPointer(3, GL_FLOAT, 0, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+	glNormalPointer(GL_FLOAT, 0, 0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+	glDrawElements(GL_TRIANGLES, 3*mesh.triangles().size(), GL_UNSIGNED_INT, 0);
 }
 
 void reshape(int w, int h) {

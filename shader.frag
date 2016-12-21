@@ -10,7 +10,7 @@
 // At first used const values.
 // Then, use uniform variables and set them from the CPU program.
 
-#define LIGHT_NUMBER 3
+#define LIGHT_NUMBER 1
 #define M_PI 3.14159265359
 
 struct LightSource {
@@ -28,8 +28,9 @@ uniform vec3 matAlbedo;
 uniform float alpha;
 uniform float f0;
 uniform int brdf_mode;
+uniform vec3 lightPos;
 
-LightSource lightSources[LIGHT_NUMBER];
+LightSource lightSources[3];
 vec3 diffuse = vec3(0.0, 0.0, 0.0);
 vec3 spec = vec3(0.0, 0.0, 0.0);
 
@@ -44,17 +45,17 @@ void ggx();
 void main (void) {
     gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0);
 
-	lightSources[0].pos = vec4(1.0, 0.0, 0.0, 1.0);
-	lightSources[0].color = vec4(1.0, 0.0, 0.0, 1.0);
-	lightSources[0].intensity = 0.8;
+	lightSources[0].pos = vec4(lightPos, 1.0);
+	lightSources[0].color = vec4(1.0, 1.0, 1.0, 1.0);
+	lightSources[0].intensity = 3.0;
 
 	lightSources[1].pos = vec4(0.0, 1.5, 0.0, 1.0);
 	lightSources[1].color = vec4(0.0, 1.0, 0.0, 1.0);
-	lightSources[1].intensity = 0.8;
+	lightSources[1].intensity = 3.0;
 
 	lightSources[2].pos = vec4(0.0, 0.0, 1.0, 1.0);
 	lightSources[2].color = vec4(0.0, 0.0, 1.0, 1.0);
-	lightSources[2].intensity = 0.8;
+	lightSources[2].intensity = 3.0;
 
 	if (brdf_mode == 0)
 		cook();
@@ -62,6 +63,7 @@ void main (void) {
 		ggx();
 
 	vec4 color = vec4((spec + diffuse), 1.0);
+//	vec4 color = vec4( diffuse, 1.0);
 
     gl_FragColor += color;
 }
@@ -96,7 +98,7 @@ void cook()
 
 	for(int i = 0; i < LIGHT_NUMBER; i++){
 		vec3 lightPos = vec3(gl_ModelViewMatrix * lightSources[i].pos);
-		vec3 wi = normalize(p - lightPos);
+		vec3 wi = normalize(lightPos - p);
 		vec3 wh = normalize(wi + wo);
 		vec3 lightColor = vec3(lightSources[i].color);
 
@@ -143,7 +145,7 @@ void ggx()
 
 	for(int i = 0; i < LIGHT_NUMBER; i++){
 		vec3 lightPos = vec3(gl_ModelViewMatrix * lightSources[i].pos);
-		vec3 wi = normalize(p - lightPos);
+		vec3 wi = normalize(lightPos - p);
 		vec3 wh = normalize(wi + wo);
 		vec3 lightColor = vec3(lightSources[i].color);
 
