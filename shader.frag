@@ -57,17 +57,17 @@ void main (void) {
 	lightSources[2].color = vec4(0.0, 0.0, 1.0, 1.0);
 	lightSources[2].intensity = 3.0;
 
-//    if (C.w != 0.5f){
-//		if (brdf_mode == 0)
-//			cook();
-//		else if (brdf_mode == 1)
-//			ggx();
-//        gl_FragColor = vec4(1.0,0.0,0.0,0.0);
-//        return;
-//    }else {
-        gl_FragColor = (P.w != 1.0)? vec4(1.0,0.0,0.0,0.0) : vec4(0.0,1.0,0.0,0.0);
-        return;
-//    }
+//	if (brdf_mode == 0)
+//		cook();
+//	else if (brdf_mode == 1)
+//		ggx();
+    if (C.w != 1.0) {
+	gl_FragColor = vec4(1.0,0.0,0.0,0.0);
+	return;
+    } else {
+	gl_FragColor = vec4(0.0,1.0,0.0,0.0);
+	return;
+    }
 
 	vec4 color = vec4((spec + diffuse), 1.0);
 

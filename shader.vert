@@ -14,6 +14,6 @@ varying float shadow;
 void main(void) {
     P = gl_Vertex;
     N = gl_Normal;
-    C = vec4(0.0,0.0,0.0,0.0);
+    C = gl_Color;
     gl_Position = ftransform ();
 }

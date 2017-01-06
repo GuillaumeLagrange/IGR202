@@ -14,6 +14,12 @@
 #include <fstream>
 #include <cstdlib>
 #include <string>
+#define PLANE true
+#define HEIGHT 10.0
+#define WIDTH 5.0
+#define HEIGHT_RES 100
+#define WIDTH_RES 50
+#define YVALUE -3.0
 
 using namespace std;
 
@@ -26,7 +32,7 @@ void Mesh::clear () {
 void Mesh::loadOFF (const std::string & filename) {
     clear ();
 	ifstream in (filename.c_str ());
-    if (!in) 
+    if (!in)
         exit (1);
 	string offString;
     unsigned int sizeV, sizeT, tmp;
@@ -38,10 +44,29 @@ void Mesh::loadOFF (const std::string & filename) {
     int s;
     for (unsigned int i = 0; i < sizeT; i++) {
         in >> s;
-        for (unsigned int j = 0; j < 3; j++) 
+        for (unsigned int j = 0; j < 3; j++)
             in >> m_triangles[i][j];
     }
     in.close ();
+
+    if (PLANE) {
+        for(int i = 0; i < HEIGHT_RES; i++) {
+            for(int j = 0; j < WIDTH_RES; j++) {
+                float x = (float) i * HEIGHT / (float) HEIGHT_RES - HEIGHT / 2;
+                float z = (float) j * WIDTH / (float) WIDTH_RES - WIDTH / 2;
+                m_positions.push_back(Vec3f(x, YVALUE, z));
+
+                if ((i != HEIGHT_RES -1) && (j != WIDTH_RES - 1)) {
+                    unsigned int i0 = m_positions.size() - 1;
+                    unsigned int i1 = i0 + 1;
+                    unsigned int i2 = i0 + WIDTH_RES ;
+                    unsigned int i3 = i0 + WIDTH_RES + 1;
+                    m_triangles.push_back(Triangle(i0, i1, i2));
+                    m_triangles.push_back(Triangle(i3, i2, i1));
+                }
+            }
+        }
+    }
     centerAndScaleToUnit ();
     recomputeNormals ();
 }
