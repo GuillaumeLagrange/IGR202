@@ -71,7 +71,7 @@ GLint GLProgram::getUniformLocation (const std::string & uniformName) {
     const GLchar * cname = uniformName.c_str ();
     GLint loc = glGetUniformLocation (_id, cname);
     if (loc == -1)
-        throw Exception (std::string ("Program Error: No such uniform named ") + uniformName);
+        //throw Exception (std::string ("Program Error: No such uniform named ") + uniformName);
     printOpenGLError ("Wrong Uniform Variable [" + uniformName + "] for Program [" + name () + "]");
     return loc;
 }

@@ -22,7 +22,6 @@ struct LightSource {
 varying vec4 P; // fragment-wise position
 varying vec3 N; // fragment-wise normal
 varying vec4 C; // fragment-wise normal
-varying float shadow;
 
 uniform vec3 kd;
 uniform vec3 matAlbedo;
@@ -32,7 +31,7 @@ uniform int brdf_mode;
 uniform vec3 lightPos;
 
 LightSource lightSources[3];
-vec3 diffuse = vec3(0.0, 0.0, 0.0);
+vec3 diffuse = vec3(C);
 vec3 spec = vec3(0.0, 0.0, 0.0);
 
 float fresnel(vec3 wh, vec3 wi);
@@ -58,14 +57,19 @@ void main (void) {
 	lightSources[2].color = vec4(0.0, 0.0, 1.0, 1.0);
 	lightSources[2].intensity = 3.0;
 
-	if (shadow == 1.0)
-		if (brdf_mode == 0)
-			cook();
-		else if (brdf_mode == 1)
-			ggx();
+//    if (C.w != 0.5f){
+//		if (brdf_mode == 0)
+//			cook();
+//		else if (brdf_mode == 1)
+//			ggx();
+//        gl_FragColor = vec4(1.0,0.0,0.0,0.0);
+//        return;
+//    }else {
+        gl_FragColor = (P.w != 1.0)? vec4(1.0,0.0,0.0,0.0) : vec4(0.0,1.0,0.0,0.0);
+        return;
+//    }
 
 	vec4 color = vec4((spec + diffuse), 1.0);
-//	vec4 color = vec4( diffuse, 1.0);
 
     gl_FragColor += color;
 }

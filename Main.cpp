@@ -39,7 +39,7 @@ using namespace std;
 
 static const unsigned int DEFAULT_SCREENWIDTH = 1024;
 static const unsigned int DEFAULT_SCREENHEIGHT = 768;
-static const string DEFAULT_MESH_FILE ("models/man.off");
+static const string DEFAULT_MESH_FILE ("models/monkey.off");
 
 static const string appTitle ("Informatique Graphique & Realite Virtuelle - Travaux Pratiques - Algorithmes de Rendu");
 static const string myName ("Guillaume Lagrange");
@@ -74,27 +74,28 @@ void printUsage () {
 }
 
 /* This function updates the shadow value in colorResponses */
-void calcShadow()
+void computePerVertexShadow()
 {
-	Vec3f lightPos = Vec3f(LIGHT_POS);
-	std::vector<Vec3f> positions = mesh.positions();
-	std::vector<Triangle> triangles = mesh.triangles();
-	for (unsigned int i = 0; i < positions.size(); i++) {
-		Ray ray = Ray(positions[i], lightPos - positions[i]);
-		colorResponses[4*i+3] = 1.0;
-		for (unsigned int j = 0; j<triangles.size(); j++) {
-			if (!triangles[j].contains(i)) {
-				int i0 = triangles[j][0];
-				int i1 = triangles[j][1];
-				int i2 = triangles[j][2];
-				if (ray.rayTriangleInter(positions[i0], positions[i1],
-							positions[i2])) {
-					colorResponses[4*i+3] = 0.0;
-					break;
-				}
-			}
-		}
-	}
+    Vec3f lightPos = Vec3f(LIGHT_POS);
+    std::vector<Vec3f> positions = mesh.positions();
+    std::vector<Triangle> triangles = mesh.triangles();
+    for (unsigned int i = 0; i < positions.size(); i++) {
+        Ray ray = Ray(positions[i], lightPos - positions[i]);
+        colorResponses[4*i+3] = 1.0;
+    //  colorResponses[4*i] = 1.0; // TEST ROUGE
+    //		for (unsigned int j = 0; j<triangles.size(); j++) {
+    //			if (!triangles[j].contains(i)) {
+    //				int i0 = triangles[j][0];
+    //				int i1 = triangles[j][1];
+    //				int i2 = triangles[j][2];
+    //				if (ray.rayTriangleInter(positions[i0], positions[i1],
+    //							positions[i2])) {
+    //					colorResponses[4*i+3] = 0.0;
+    //					break;
+    //				}
+    //			}
+    //		}
+    }
 }
 
 void init (const char * modelFilename) {
@@ -111,7 +112,7 @@ void init (const char * modelFilename) {
 	glLineWidth (2.0); // Set the width of edges in GL_LINE polygon mode
     glClearColor (0.0f, 0.0f, 0.0f, 1.0f); // Background color
 	mesh.loadOFF (modelFilename);
-    colorResponses.resize (4 * mesh.positions ().size ());
+    colorResponses.resize (4 * mesh.positions().size(), 0.0f);
     camera.resize (DEFAULT_SCREENWIDTH, DEFAULT_SCREENHEIGHT);
     try {
         glProgram = GLProgram::genVFProgram ("Simple GL Program", "shader.vert", "shader.frag"); // Load and compile pair of shaders
@@ -130,7 +131,7 @@ void init (const char * modelFilename) {
 	glProgram->setUniform1i("brdf_mode", GGX_MODE);
 
 	/* Shadows calculation */
-	calcShadow();
+	computePerVertexShadow();
 
 	/* VBO setup */
 	glGenBuffers(1, &vertexVBO);
@@ -155,7 +156,8 @@ void init (const char * modelFilename) {
 }
 
 void renderScene () {
-    glColorPointer (4, GL_FLOAT, 0, (GLvoid*)(&(colorResponses[0])));
+	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+	glColorPointer(4, GL_FLOAT, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
 	glVertexPointer(3, GL_FLOAT, 0, 0);
