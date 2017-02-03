@@ -59,14 +59,14 @@ GLuint colorVBO;
 static std::vector<float> colorResponses; // Cached per-vertex color response, updated at each frame
 
 void printUsage () {
-	std::cerr << std::endl
-		 << appTitle << std::endl
+    std::cerr << std::endl
+         << appTitle << std::endl
          << "Author: " << myName << std::endl << std::endl
          << "Usage: ./main [<file.off>]" << std::endl
          << "Commands:" << std::endl
          << "------------------" << std::endl
          << " ?: Print help" << std::endl
-		 << " w: Toggle wireframe mode" << std::endl
+         << " w: Toggle wireframe mode" << std::endl
          << " <drag>+<left button>: rotate model" << std::endl
          << " <drag>+<right button>: move model" << std::endl
          << " <drag>+<middle button>: zoom" << std::endl
@@ -82,17 +82,17 @@ void computePerVertexShadow()
     for (unsigned int i = 0; i < positions.size(); i++) {
         Ray ray = Ray(positions[i], lightPos - positions[i]);
         colorResponses[4*i+3] = 0.0;
-    		for (unsigned int j = 0; j<triangles.size(); j++) {
-    			if (!triangles[j].contains(i)) {
-    				int i0 = triangles[j][0];
-    				int i1 = triangles[j][1];
-    				int i2 = triangles[j][2];
-    				if (ray.rayTriangleInter(positions[i0], positions[i1],
-    							positions[i2])) {
-    					colorResponses[4*i+3] = 1.0;
-    				}
-    			}
-    		}
+            for (unsigned int j = 0; j<triangles.size(); j++) {
+                if (!triangles[j].contains(i)) {
+                    int i0 = triangles[j][0];
+                    int i1 = triangles[j][1];
+                    int i2 = triangles[j][2];
+                    if (ray.rayTriangleInter(positions[i0], positions[i1],
+                                positions[i2])) {
+                        colorResponses[4*i+3] = 1.0;
+                    }
+                }
+            }
     }
 }
 
@@ -107,9 +107,9 @@ void init (const char * modelFilename) {
     glEnableClientState (GL_NORMAL_ARRAY);
     glEnableClientState (GL_COLOR_ARRAY);
     glEnable (GL_NORMALIZE);
-	glLineWidth (2.0); // Set the width of edges in GL_LINE polygon mode
+    glLineWidth (2.0); // Set the width of edges in GL_LINE polygon mode
     glClearColor (0.0f, 0.0f, 0.0f, 1.0f); // Background color
-	mesh.loadOFF (modelFilename);
+    mesh.loadOFF (modelFilename);
     colorResponses.resize (4 * mesh.positions().size(), 0.0f);
     camera.resize (DEFAULT_SCREENWIDTH, DEFAULT_SCREENHEIGHT);
     try {
@@ -120,51 +120,51 @@ void init (const char * modelFilename) {
         cerr << e.msg () << endl;
     }
 
-	/* Material constants */
-	glProgram->setUniform3f("kd", KD);
-	glProgram->setUniform3f("matAlbedo", ALBEDO);
-	glProgram->setUniform3f("lightPos", LIGHT_POS);
-	glProgram->setUniform1f("alpha", ALPHA);
-	glProgram->setUniform1f("f0", FZERO);
-	glProgram->setUniform1i("brdf_mode", GGX_MODE);
+    /* Material constants */
+    glProgram->setUniform3f("kd", KD);
+    glProgram->setUniform3f("matAlbedo", ALBEDO);
+    glProgram->setUniform3f("lightPos", LIGHT_POS);
+    glProgram->setUniform1f("alpha", ALPHA);
+    glProgram->setUniform1f("f0", FZERO);
+    glProgram->setUniform1i("brdf_mode", GGX_MODE);
 
-	/* Shadows calculation */
-	computePerVertexShadow();
+    /* Shadows calculation */
+    computePerVertexShadow();
 
-	/* VBO setup */
-	glGenBuffers(1, &vertexVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
-	glBufferData(GL_ARRAY_BUFFER, mesh.positions().size() * sizeof(Vec3f),
-			&(mesh.positions()[0]), GL_STATIC_DRAW);
+    /* VBO setup */
+    glGenBuffers(1, &vertexVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+    glBufferData(GL_ARRAY_BUFFER, mesh.positions().size() * sizeof(Vec3f),
+            &(mesh.positions()[0]), GL_STATIC_DRAW);
 
-	glGenBuffers(1, &indexVBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.triangles().size() * sizeof(Triangle),
-			&(mesh.triangles()[0]), GL_STATIC_DRAW);
+    glGenBuffers(1, &indexVBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, mesh.triangles().size() * sizeof(Triangle),
+            &(mesh.triangles()[0]), GL_STATIC_DRAW);
 
-	glGenBuffers(1, &normalVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
-	glBufferData(GL_ARRAY_BUFFER, mesh.normals().size() * sizeof(Vec3f),
-			&(mesh.normals()[0]), GL_STATIC_DRAW);
+    glGenBuffers(1, &normalVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+    glBufferData(GL_ARRAY_BUFFER, mesh.normals().size() * sizeof(Vec3f),
+            &(mesh.normals()[0]), GL_STATIC_DRAW);
 
-	glGenBuffers(1, &colorVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
-	glBufferData(GL_ARRAY_BUFFER, colorResponses.size() * sizeof(float),
-			&(colorResponses[0]), GL_STATIC_DRAW);
+    glGenBuffers(1, &colorVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+    glBufferData(GL_ARRAY_BUFFER, colorResponses.size() * sizeof(float),
+            &(colorResponses[0]), GL_STATIC_DRAW);
 }
 
 void renderScene () {
-	glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
-	glColorPointer(4, GL_FLOAT, 0, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+    glColorPointer(4, GL_FLOAT, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
-	glVertexPointer(3, GL_FLOAT, 0, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
+    glVertexPointer(3, GL_FLOAT, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
-	glNormalPointer(GL_FLOAT, 0, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, normalVBO);
+    glNormalPointer(GL_FLOAT, 0, 0);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-	glDrawElements(GL_TRIANGLES, 3*mesh.triangles().size(), GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexVBO);
+    glDrawElements(GL_TRIANGLES, 3*mesh.triangles().size(), GL_UNSIGNED_INT, 0);
 }
 
 void reshape(int w, int h) {
@@ -196,8 +196,8 @@ void key (unsigned char keyPressed, int x, int y) {
         break;
     case 'w':
         GLint mode[2];
-		glGetIntegerv (GL_POLYGON_MODE, mode);
-		glPolygonMode (GL_FRONT_AND_BACK, mode[1] ==  GL_FILL ? GL_LINE : GL_FILL);
+        glGetIntegerv (GL_POLYGON_MODE, mode);
+        glPolygonMode (GL_FRONT_AND_BACK, mode[1] ==  GL_FILL ? GL_LINE : GL_FILL);
         break;
         break;
     default:
