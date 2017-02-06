@@ -94,6 +94,11 @@ void computePerVertexShadow()
                 }
             }
     }
+
+    glGenBuffers(1, &colorVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+    glBufferData(GL_ARRAY_BUFFER, colorResponses.size() * sizeof(float),
+            &(colorResponses[0]), GL_DYNAMIC_DRAW);
 }
 
 void init (const char * modelFilename) {
@@ -128,9 +133,6 @@ void init (const char * modelFilename) {
     glProgram->setUniform1f("f0", FZERO);
     glProgram->setUniform1i("brdf_mode", GGX_MODE);
 
-    /* Shadows calculation */
-    computePerVertexShadow();
-
     /* VBO setup */
     glGenBuffers(1, &vertexVBO);
     glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
@@ -150,7 +152,7 @@ void init (const char * modelFilename) {
     glGenBuffers(1, &colorVBO);
     glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
     glBufferData(GL_ARRAY_BUFFER, colorResponses.size() * sizeof(float),
-            &(colorResponses[0]), GL_STATIC_DRAW);
+            &(colorResponses[0]), GL_DYNAMIC_DRAW);
 }
 
 void renderScene () {
@@ -199,6 +201,9 @@ void key (unsigned char keyPressed, int x, int y) {
         glGetIntegerv (GL_POLYGON_MODE, mode);
         glPolygonMode (GL_FRONT_AND_BACK, mode[1] ==  GL_FILL ? GL_LINE : GL_FILL);
         break;
+        break;
+    case 't' :
+        computePerVertexShadow();
         break;
     default:
         printUsage ();

@@ -2,6 +2,8 @@
 
 #include "Ray.h"
 
+#define EPSILON 0.0001f
+
 Ray::Ray()
 {
 	origin = Vec3f(0.0, 0.0, 0.0);
@@ -22,22 +24,20 @@ bool Ray::rayTriangleInter(Vec3f p0, Vec3f p1, Vec3f p2)
 	Vec3f q = cross(direction, e1);
 	float a = dot(e0, q);
 
-	if (dot(n, direction) >= 0 || std::abs(a) < 0.001)
+	if (std::abs(a) < EPSILON)
 		return false;
 
 	Vec3f s = (origin - p0) / a;
 	Vec3f r = cross(s, e0);
 	float b0 = dot(s, q);
 	float b1 = dot(r, direction);
-	float b2 = 1.f - b0 - b1;
 
-	if (b0 < 0 || b1 < 0 || b2 < 0)
+	if (b0 < 0.0 || b0 > 1.0)
+		return false;
+
+	if (b1 < 0.0 || b0 + b1 > 1.0)
 		return false;
 
 	float t = dot(e1, r);
-
-	if (t >= 0)
-		return true;
-
-	return false;
+    return(t > EPSILON);
 }
