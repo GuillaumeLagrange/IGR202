@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 #include "Vec3.h"
 #include "Camera.h"
@@ -32,14 +33,16 @@ using namespace std;
 #define ALPHA 0.8
 #define FZERO 0.02
 #define KD 1.0,1.0,1.0
-#define ALBEDO 0.6,0.6,0.6
+#define ALBEDO 1.0,1.0,1.0
 #define COOK_MODE 0
 #define GGX_MODE 1
-#define LIGHT_POS 1.0,0.0,0.0
+#define DIFFUSE_MODE 2
+#define LIGHT_POS 0.5,0.0,0.0
+#define EPSILON 0.0001f
 
 static const unsigned int DEFAULT_SCREENWIDTH = 1024;
 static const unsigned int DEFAULT_SCREENHEIGHT = 768;
-static const string DEFAULT_MESH_FILE ("models/man.off");
+static const string DEFAULT_MESH_FILE ("models/monkey.off");
 
 static const string appTitle ("Informatique Graphique & Realite Virtuelle - Travaux Pratiques - Algorithmes de Rendu");
 static const string myName ("Guillaume Lagrange");
@@ -70,31 +73,98 @@ void printUsage () {
          << " <drag>+<left button>: rotate model" << std::endl
          << " <drag>+<right button>: move model" << std::endl
          << " <drag>+<middle button>: zoom" << std::endl
-         << " q, <esc>: Quit" << std::endl << std::endl;
+         << " q, <esc>: Quit" << std::endl
+         << " t : Compute per vertex shadow" << std::endl
+         << " g : Compute per vertex AO" << std::endl << std::endl;
 }
 
-/* This function updates the shadow value in colorResponses */
+/* This function updates the shadow value in colorResponses by ray tracing */
 void computePerVertexShadow()
 {
     Vec3f lightPos = Vec3f(LIGHT_POS);
     std::vector<Vec3f> positions = mesh.positions();
     std::vector<Triangle> triangles = mesh.triangles();
+
     for (unsigned int i = 0; i < positions.size(); i++) {
         Ray ray = Ray(positions[i], lightPos - positions[i]);
         colorResponses[4*i+3] = 0.0;
-            for (unsigned int j = 0; j<triangles.size(); j++) {
-                if (!triangles[j].contains(i)) {
-                    int i0 = triangles[j][0];
-                    int i1 = triangles[j][1];
-                    int i2 = triangles[j][2];
-                    if (ray.rayTriangleInter(positions[i0], positions[i1],
-                                positions[i2])) {
-                        colorResponses[4*i+3] = 1.0;
-                    }
+
+        for (unsigned int j = 0; j<triangles.size(); j++) {
+            if (!triangles[j].contains(i)) {
+                int i0 = triangles[j][0];
+                int i1 = triangles[j][1];
+                int i2 = triangles[j][2];
+                if (ray.rayTriangleInter(positions[i0], positions[i1],
+                            positions[i2])) {
+                    colorResponses[4*i+3] = 1.0;
                 }
             }
+        }
     }
 
+    /* Updating the VBO, sending values to GPU */
+    glGenBuffers(1, &colorVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
+    glBufferData(GL_ARRAY_BUFFER, colorResponses.size() * sizeof(float),
+            &(colorResponses[0]), GL_DYNAMIC_DRAW);
+}
+
+void computePerVertexAO(int numOfSamples, float radius)
+{
+    std::random_device rd;
+    std::default_random_engine generator(rd());
+    std::uniform_real_distribution<float> range(-1.f,1.f);
+
+    std::vector<Vec3f> positions = mesh.positions();
+    std::vector<Vec3f> normals = mesh.normals();
+    std::vector<Triangle> triangles = mesh.triangles();
+
+    for (unsigned int i = 0; i < positions.size(); i++) {
+        Vec3f x,y;
+        Vec3f position = positions[i];
+        Vec3f normal = normalize(normals[i]);
+        normal.getTwoOrthogonals(x, y);
+
+        float ao = 0;
+        for (int j = 0; j < numOfSamples; j++) {
+            /* Generation of a random vector */
+            float u = range(generator);
+            float v = range(generator);
+            Vec3f w = normalize(u*x + v*y + normal);
+
+            Ray ray = Ray(position, w);
+            bool inter = false;
+
+            for(unsigned int k = 0; k < triangles.size(); k++) {
+                if (!triangles[k].contains(i)) {
+                    int i0 = triangles[k][0];
+                    int i1 = triangles[k][1];
+                    int i2 = triangles[k][2];
+//                    float dist = ray.rayTriangleInterDist(positions[i0],
+//                            positions[i1], positions[i2]);
+                    Vec3f t = (positions[i0]+positions[i1]+positions[i2])/3.f;
+                    float dist = length(position - t);
+//                    if (!(dist > EPSILON && dist < radius))
+//                        ao += dot(normal, w);
+                    inter |= ray.rayTriangleInter(positions[i0],
+                            positions[i1], positions[i2]) && (dist < radius);
+                }
+            }
+
+            if(!inter)
+                ao += dot(normal, w);
+        }
+
+        ao *= 1.f/(float) numOfSamples;
+
+        /* Multiplication of albedo by AO factor */
+        cout << "AO de " << i << " : " << ao <<std::endl;
+        colorResponses[4*i]     = ao;
+        colorResponses[4*i + 1] = ao;
+        colorResponses[4*i + 2] = ao;
+    }
+
+    /* Updating the VBO, sending values to GPU */
     glGenBuffers(1, &colorVBO);
     glBindBuffer(GL_ARRAY_BUFFER, colorVBO);
     glBufferData(GL_ARRAY_BUFFER, colorResponses.size() * sizeof(float),
@@ -131,7 +201,7 @@ void init (const char * modelFilename) {
     glProgram->setUniform3f("lightPos", LIGHT_POS);
     glProgram->setUniform1f("alpha", ALPHA);
     glProgram->setUniform1f("f0", FZERO);
-    glProgram->setUniform1i("brdf_mode", GGX_MODE);
+    glProgram->setUniform1i("brdf_mode", DIFFUSE_MODE);
 
     /* VBO setup */
     glGenBuffers(1, &vertexVBO);
@@ -204,6 +274,9 @@ void key (unsigned char keyPressed, int x, int y) {
         break;
     case 't' :
         computePerVertexShadow();
+        break;
+    case 'g' :
+        computePerVertexAO(100, 1.0);
         break;
     default:
         printUsage ();

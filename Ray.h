@@ -12,4 +12,5 @@ public :
 	Ray();
 	Ray(Vec3f, Vec3f);
 	bool rayTriangleInter(Vec3f, Vec3f, Vec3f);
+	float rayTriangleInterDist(Vec3f, Vec3f, Vec3f);
 };

@@ -14,7 +14,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <string>
-#define PLANE true
+#define PLANE false
 #define HEIGHT 10.0
 #define WIDTH 5.0
 #define HEIGHT_RES 100

@@ -43,7 +43,7 @@ float dGGX(vec3, vec3);
 void ggx();
 
 void main (void) {
-    gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0);
+    gl_FragColor = C;
 
 	lightSources[0].pos = vec4(lightPos, 1.0);
 	lightSources[0].color = vec4(1.0, 1.0, 1.0, 1.0);
@@ -62,9 +62,12 @@ void main (void) {
             cook();
         else if (brdf_mode == 1)
             ggx();
+        else if (brdf_mode == 2){
+            diffuse += kd/M_PI;
+        }
     }
 
-	vec4 color = vec4((spec + diffuse), 1.0);
+	vec4 color = vec4((spec + diffuse), 0.0);
 
     gl_FragColor += color;
 }
@@ -109,7 +112,7 @@ void cook()
 		/* Diffuse */
 		vec3 f_d = kd/M_PI;
 		diffuse += attenuation * lightSources[i].intensity *
-			lightColor * dot(n, wi)* matAlbedo * f_d;
+			lightColor * dot(n, wi) * f_d;
 
 		/* Specular */
 		float f = fresnel(wh, wi);
@@ -156,7 +159,7 @@ void ggx()
 		/* Diffuse */
 		vec3 f_d = kd/M_PI;
 		diffuse += attenuation * lightSources[i].intensity *
-			lightColor * dot(n, wi)* matAlbedo * f_d;
+			lightColor * dot(n, wi) * f_d;
 
 		/* Specular */
 		float f = fresnel(wh, wi);
