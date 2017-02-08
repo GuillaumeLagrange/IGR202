@@ -140,12 +140,8 @@ void computePerVertexAO(int numOfSamples, float radius)
                     int i0 = triangles[k][0];
                     int i1 = triangles[k][1];
                     int i2 = triangles[k][2];
-//                    float dist = ray.rayTriangleInterDist(positions[i0],
-//                            positions[i1], positions[i2]);
                     Vec3f t = (positions[i0]+positions[i1]+positions[i2])/3.f;
                     float dist = length(position - t);
-//                    if (!(dist > EPSILON && dist < radius))
-//                        ao += dot(normal, w);
                     inter |= ray.rayTriangleInter(positions[i0],
                             positions[i1], positions[i2]) && (dist < radius);
                 }
@@ -160,8 +156,6 @@ void computePerVertexAO(int numOfSamples, float radius)
         /* Multiplication of albedo by AO factor */
         cout << "AO de " << i << " : " << ao <<std::endl;
         colorResponses[4*i]     = ao;
-        colorResponses[4*i + 1] = ao;
-        colorResponses[4*i + 2] = ao;
     }
 
     /* Updating the VBO, sending values to GPU */
