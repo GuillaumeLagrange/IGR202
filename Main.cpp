@@ -37,7 +37,7 @@ using namespace std;
 #define COOK_MODE 0
 #define GGX_MODE 1
 #define DIFFUSE_MODE 2
-#define LIGHT_POS 0.5,0.0,0.0
+#define LIGHT_POS 1.0,0.0,0.0
 #define EPSILON 0.0001f
 
 static const unsigned int DEFAULT_SCREENWIDTH = 1024;
@@ -87,7 +87,7 @@ void computePerVertexShadow()
 
     for (unsigned int i = 0; i < positions.size(); i++) {
         Ray ray = Ray(positions[i], lightPos - positions[i]);
-        colorResponses[4*i+3] = 0.0;
+        colorResponses[4*i+3] = 1.0;
 
         for (unsigned int j = 0; j<triangles.size(); j++) {
             if (!triangles[j].contains(i)) {
@@ -96,7 +96,7 @@ void computePerVertexShadow()
                 int i2 = triangles[j][2];
                 if (ray.rayTriangleInter(positions[i0], positions[i1],
                             positions[i2])) {
-                    colorResponses[4*i+3] = 1.0;
+                    colorResponses[4*i+3] = -1.0;
                 }
             }
         }
@@ -155,7 +155,7 @@ void computePerVertexAO(int numOfSamples, float radius)
 
         /* Multiplication of albedo by AO factor */
         cout << "AO de " << i << " : " << ao <<std::endl;
-        colorResponses[4*i]     = ao;
+        colorResponses[4*i + 3] *= ao;
     }
 
     /* Updating the VBO, sending values to GPU */
@@ -196,6 +196,11 @@ void init (const char * modelFilename) {
     glProgram->setUniform1f("alpha", ALPHA);
     glProgram->setUniform1f("f0", FZERO);
     glProgram->setUniform1i("brdf_mode", GGX_MODE);
+
+    /* Settting 4th compenent of colors as 1 */
+    for (unsigned int i = 0; i < mesh.positions().size(); i++) {
+        colorResponses[4*i + 3] = 1.f;
+    }
 
     /* VBO setup */
     glGenBuffers(1, &vertexVBO);
