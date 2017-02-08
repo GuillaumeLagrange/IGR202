@@ -43,7 +43,6 @@ float dGGX(vec3, vec3);
 void ggx();
 
 void main (void) {
-    gl_FragColor = C;
 
 	lightSources[0].pos = vec4(lightPos, 1.0);
 	lightSources[0].color = vec4(1.0, 1.0, 1.0, 1.0);
@@ -58,6 +57,7 @@ void main (void) {
 	lightSources[2].intensity = 3.0;
 
     if (C.w != 1.0) {
+        gl_FragColor = vec4(0.0,0.0,0.0,1.0);
         if (brdf_mode == 0)
             cook();
         else if (brdf_mode == 1)
@@ -65,11 +65,38 @@ void main (void) {
         else if (brdf_mode == 2){
             diffuse += kd/M_PI;
         }
+    } else {
+        gl_FragColor = C * vec4(matAlbedo, 1.0) * 0.15;
     }
 
 	vec4 color = vec4((spec + diffuse), 0.0);
 
     gl_FragColor += color;
+}
+
+void diffuse()
+{
+    vec3 p = vec3 (gl_ModelViewMatrix * P);
+    vec3 n = normalize (gl_NormalMatrix * N);
+    vec3 wo = normalize (-p);
+
+
+	/* Model parameters */
+
+	for(int i = 0; i < LIGHT_NUMBER; i++){
+		vec3 lightPos = vec3(gl_ModelViewMatrix * lightSources[i].pos);
+		vec3 wi = normalize(lightPos - p);
+		vec3 wh = normalize(wi + wo);
+		vec3 lightColor = vec3(lightSources[i].color);
+
+		/* Attenuation */
+		float attenuation = 1.0/(length(p - lightPos) * length(p - lightPos));
+
+		/* Diffuse */
+		vec3 f_d = kd/M_PI;
+		diffuse += attenuation * lightSources[i].intensity *
+			lightColor * dot(n, wi) * f_d;
+    }
 }
 
 float fresnel(vec3 wh, vec3 wi)
@@ -170,3 +197,4 @@ void ggx()
 			* f_s * lightColor;
 	}
 }
+

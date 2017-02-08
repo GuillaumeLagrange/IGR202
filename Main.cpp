@@ -33,7 +33,7 @@ using namespace std;
 #define ALPHA 0.8
 #define FZERO 0.02
 #define KD 1.0,1.0,1.0
-#define ALBEDO 1.0,1.0,1.0
+#define ALBEDO 0.15,0.15,0.15
 #define COOK_MODE 0
 #define GGX_MODE 1
 #define DIFFUSE_MODE 2
@@ -201,7 +201,7 @@ void init (const char * modelFilename) {
     glProgram->setUniform3f("lightPos", LIGHT_POS);
     glProgram->setUniform1f("alpha", ALPHA);
     glProgram->setUniform1f("f0", FZERO);
-    glProgram->setUniform1i("brdf_mode", DIFFUSE_MODE);
+    glProgram->setUniform1i("brdf_mode", GGX_MODE);
 
     /* VBO setup */
     glGenBuffers(1, &vertexVBO);
