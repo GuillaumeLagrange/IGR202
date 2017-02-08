@@ -154,7 +154,6 @@ void computePerVertexAO(int numOfSamples, float radius)
         ao *= 1.f/(float) numOfSamples;
 
         /* Multiplication of albedo by AO factor */
-        cout << "AO de " << i << " : " << ao <<std::endl;
         colorResponses[4*i + 3] *= ao;
     }
 
