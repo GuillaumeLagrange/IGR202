@@ -150,15 +150,15 @@ class BoundingBox {
                 int j = triIndex[i];
                 Triangle currentTri = triangles[j];
 
-                colors[4*currentTri[0]]     = randColor[0];
+                colors[4*currentTri[0]    ] = randColor[0];
                 colors[4*currentTri[0] + 1] = randColor[1];
                 colors[4*currentTri[0] + 2] = randColor[2];
 
-                colors[4*currentTri[1]]     = randColor[0];
+                colors[4*currentTri[1]    ] = randColor[0];
                 colors[4*currentTri[1] + 1] = randColor[1];
                 colors[4*currentTri[1] + 2] = randColor[2];
 
-                colors[4*currentTri[2]]     = randColor[0];
+                colors[4*currentTri[2]    ] = randColor[0];
                 colors[4*currentTri[2] + 1] = randColor[1];
                 colors[4*currentTri[2] + 2] = randColor[2];
             }
