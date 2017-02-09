@@ -27,6 +27,8 @@
 #include "Exception.h"
 #include "LightSource.h"
 #include "Ray.h"
+#include "BVH.h"
+#include "BoundingBox.h"
 
 using namespace std;
 
