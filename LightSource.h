@@ -3,16 +3,24 @@
 #include "Vec3.h"
 
 class LightSource {
-public :
-    LightSource();
-	LightSource(float x, float y, float z);
-  void setPosition(float x, float y, float z);
-  void setColor(float r, float g, float b);
-  Vec3f getPosition();
-  Vec3f getColor();
-//	void setPosition(float x1, float y1, float z1);
-
 private :
     Vec3f position;
     Vec3f color;
+    float intensity;
+
+public :
+    LightSource();
+    LightSource(Vec3f _position, Vec3f _color, float _intensity);
+    Vec3f getPosition();
+    Vec3f getColor();
+
+    void addR(float r);
+    void addPhi(float phi);
+    void addTheta(float theta);
+
+    void addRed(float red);
+    void addGreen(float geen);
+    void addBlue(float blue);
+
+    void addIntensity(float _intensity);
 };

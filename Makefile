@@ -1,5 +1,5 @@
 CIBLE = main
-SRCS =  Main.cpp Camera.cpp Mesh.cpp GLProgram.cpp GLShader.cpp GLError.cpp LightSource.cpp Ray.cpp
+SRCS =  Main.cpp Camera.cpp Mesh.cpp GLProgram.cpp GLShader.cpp GLError.cpp LightSource.cpp Ray.cpp BVH.cpp
 OPENGL_PATH = /usr/lib/nvidia # change this for your own environment
 LIBS = -L$(OPENGL_PATH) -lglut -lGLU -lGL -lGLEW -lm -lpthread
 
@@ -26,3 +26,4 @@ GLProgram.o: GLProgram.cpp GLProgram.h GLShader.h GLError.h Exception.h
 Main.o: Main.cpp Vec3.h Camera.h Mesh.h GLProgram.h Exception.h BoundingBox.h BVH.h
 LightSource.o: LightSource.cpp LightSource.h
 Ray.o: Ray.cpp Ray.h
+BVH.o: BVH.h BVH.cpp BoundingBox.h

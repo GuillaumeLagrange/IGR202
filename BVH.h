@@ -8,54 +8,43 @@
 
 class BVH {
     private :
+        const Mesh * mesh;
+
+        std::vector<int> tri_index;
         BoundingBox bBox;
         BVH * leftChild;
         BVH * rightChild;
+
         /* Stopping criteria */
-        static int max_density;
-        static int max_nodes;
+        static unsigned int max_density;
+        static unsigned int nodes;
+        static unsigned int leaves;
+
+        void split(std::vector<int> &_child_tri_index_1,
+                   std::vector<int> &_child_tri_index_2,
+                   BoundingBox &child_box_1, BoundingBox &child_box_2);
 
     public :
-        BVH() {}
-
-        /* Constructor with max_nodes stopping */
-        BVH(const Mesh &mesh) {
-            std::vector<int> triIndex;
-            std::vector<Triangle> triangles = mesh.triangles();
-
-            for (unsigned int i = 0; i < triangles.size(); i++)
-                triIndex.push_back(i);
-
-            bBox = BoundingBox(mesh, triIndex);
-            std::vector<BoundingBox> children = bBox.split(mesh);
-            leftChild = new BVH(mesh, children[0]);
-            rightChild = new BVH(mesh, children[1]);
-            max_nodes --;
-        }
-
-        /* Constructor with max_density stopping */
-        BVH(const Mesh &mesh, const BoundingBox &_bBox) :
-            bBox(_bBox), leftChild(NULL), rightChild(NULL) {
-                if(bBox.getDensity() > max_density) {
-                    std::vector<BoundingBox> children = bBox.split(mesh);
-                    leftChild = new BVH(mesh, children[0]);
-                    rightChild = new BVH(mesh, children[1]);
-                }
-        }
+        ~BVH() {};
+        /* Constructors */
+        BVH();
+        BVH(const Mesh &mesh);
+        BVH(const Mesh &mesh, const std::vector<int> &tri_index,
+                const BoundingBox &_bBox);
 
         /* Getters */
-        const Vec3f getMeanPos() {return bBox.getMeanPos();}
-        const Vec3f getMeanNor() {return bBox.getMeanNor();}
+        const BVH*  getLeftChild() {return leftChild;}
+        const BVH*  getRightChild() {return rightChild;}
+        const BoundingBox getBBox() {return bBox;}
+        const std::vector<int> getIndexes() const {return tri_index;}
+        const Mesh* getMesh() const {return mesh;}
 
-        const void draw(const Mesh &mesh, std::vector<float> &colors) {
+        const void draw(std::vector<float> &colors) {
             if (leftChild != NULL)
-                leftChild->draw(mesh, colors);
+                leftChild->draw(colors);
             if (rightChild != NULL)
-                rightChild->draw(mesh, colors);
+                rightChild->draw(colors);
             if (leftChild == NULL && rightChild == NULL)
-                bBox.draw(mesh, colors);
+                bBox.draw(mesh, colors, tri_index);
         }
 };
-
-int BVH::max_density = 100;
-int BVH::max_nodes = 100;

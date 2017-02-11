@@ -32,6 +32,7 @@ uniform float alpha;
 uniform float f0;
 uniform int brdf_mode;
 uniform vec3 lightPos;
+uniform vec3 lightColor;
 
 LightSource lightSources[3];
 vec3 diffuse = vec3(C);

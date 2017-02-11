@@ -27,8 +27,8 @@
 #include "Exception.h"
 #include "LightSource.h"
 #include "Ray.h"
-#include "BVH.h"
 #include "BoundingBox.h"
+#include "BVH.h"
 
 using namespace std;
 
@@ -60,7 +60,8 @@ GLuint vertexVBO;
 GLuint indexVBO;
 GLuint normalVBO;
 GLuint colorVBO;
-
+static BVH * bvh;
+static LightSource lightSource;
 static std::vector<float> colorResponses; // Cached per-vertex color response, updated at each frame
 
 void printUsage () {
@@ -75,15 +76,20 @@ void printUsage () {
          << " <drag>+<left button>: rotate model" << std::endl
          << " <drag>+<right button>: move model" << std::endl
          << " <drag>+<middle button>: zoom" << std::endl
-         << " q, <esc>: Quit" << std::endl
+         << " <esc>: Quit" << std::endl
+         << " z, q, s, d : Move the light source position" << std::endl
+         << " r, R : Control the red level of the light source" << std::endl
+         << " g, G : Control the green level of the light source" << std::endl
+         << " b, B : Control the blue level of the light source" << std::endl
+         << " i, I : Control the intensity of the light source" << std::endl
          << " t : Compute per vertex shadow" << std::endl
-         << " g : Compute per vertex AO" << std::endl << std::endl;
+         << " o : Compute per vertex AO" << std::endl << std::endl;
 }
 
 /* This function updates the shadow value in colorResponses by ray tracing */
 void computePerVertexShadow()
 {
-    Vec3f lightPos = Vec3f(LIGHT_POS);
+    Vec3f lightPos = lightSource.getPosition();
     std::vector<Vec3f> positions = mesh.positions();
     std::vector<Triangle> triangles = mesh.triangles();
 
@@ -190,10 +196,15 @@ void init (const char * modelFilename) {
         cerr << e.msg () << endl;
     }
 
+    lightSource = LightSource(Vec3f(1.0,0.0,0.0), Vec3f(1.0,1.0,1.0), 1.0);
+    Vec3f lightPos = lightSource.getPosition();
+    Vec3f lightColor = lightSource.getColor();
     /* Material constants */
     glProgram->setUniform3f("kd", KD);
     glProgram->setUniform3f("matAlbedo", ALBEDO);
-    glProgram->setUniform3f("lightPos", LIGHT_POS);
+    glProgram->setUniform3f("lightPos", lightPos[0], lightPos[1], lightPos[2]);
+    glProgram->setUniform3f("lightColor", lightColor[0], lightColor[1],
+            lightColor[2]);
     glProgram->setUniform1f("alpha", ALPHA);
     glProgram->setUniform1f("f0", FZERO);
     glProgram->setUniform1i("brdf_mode", GGX_MODE);
@@ -262,7 +273,41 @@ void key (unsigned char keyPressed, int x, int y) {
             fullScreen = true;
         }
         break;
-    case 'q':
+    case 'z': {
+        lightSource.addTheta(0.1);
+        Vec3f lightPos = lightSource.getPosition();
+        glProgram->setUniform3f("lightPos",
+            lightPos[0], lightPos[1], lightPos[2]);
+        break;
+        }
+    case 's': {
+        lightSource.addTheta(-0.1);
+        Vec3f lightPos = lightSource.getPosition();
+        glProgram->setUniform3f("lightPos",
+            lightPos[0], lightPos[1], lightPos[2]);
+        break;
+        }
+    case 'q': {
+        lightSource.addPhi(0.1);
+        Vec3f lightPos = lightSource.getPosition();
+        glProgram->setUniform3f("lightPos",
+            lightPos[0], lightPos[1], lightPos[2]);
+        break;
+        }
+    case 'd': {
+        lightSource.addPhi(-0.1);
+        Vec3f lightPos = lightSource.getPosition();
+        glProgram->setUniform3f("lightPos",
+            lightPos[0], lightPos[1], lightPos[2]);
+        break;
+        }
+    case 'r': {
+        lightSource.addTheta(0.1);
+        Vec3f lightPos = lightSource.getPosition();
+        glProgram->setUniform3f("lightPos",
+            lightPos[0], lightPos[1], lightPos[2]);
+        break;
+        }
     case 27:
         exit (0);
         break;
@@ -277,6 +322,12 @@ void key (unsigned char keyPressed, int x, int y) {
         break;
     case 'g' :
         computePerVertexAO(100, 1.0);
+        break;
+    case 'n' :
+        bvh->draw(colorResponses);
+        break;
+    case 'b' :
+        bvh = new BVH(mesh);
         break;
     default:
         printUsage ();
