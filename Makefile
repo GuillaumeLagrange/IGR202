@@ -13,8 +13,14 @@ CXXFLAGS = $(FLAGS)
 
 OBJS = $(SRCS:.cpp=.o)
 
+.PHONY : clean run
+
 $(CIBLE): $(OBJS)
 	g++ $(LDFLAGS) -o $(CIBLE) $(OBJS) $(LIBS)
+
+run : $(CIBLE)
+	./$<
+
 clean:
 	rm -f  *~  $(CIBLE) $(OBJS)
 

@@ -13,6 +13,9 @@ public :
     LightSource(Vec3f _position, Vec3f _color, float _intensity);
     Vec3f getPosition();
     Vec3f getColor();
+    float getIntensity();
+
+    void setColor(Vec3f _color);
 
     void addR(float r);
     void addPhi(float phi);

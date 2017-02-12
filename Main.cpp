@@ -40,6 +40,8 @@ using namespace std;
 #define GGX_MODE 1
 #define DIFFUSE_MODE 2
 #define LIGHT_POS 1.0,0.0,0.0
+#define LIGHT_COL 1.0,0.0,0.0
+#define LIGHT_INT 1.0
 #define EPSILON 0.0001f
 
 static const unsigned int DEFAULT_SCREENWIDTH = 1024;
@@ -66,24 +68,25 @@ static std::vector<float> colorResponses; // Cached per-vertex color response, u
 
 void printUsage () {
     std::cerr << std::endl
-         << appTitle << std::endl
-         << "Author: " << myName << std::endl << std::endl
-         << "Usage: ./main [<file.off>]" << std::endl
-         << "Commands:" << std::endl
-         << "------------------" << std::endl
-         << " ?: Print help" << std::endl
-         << " w: Toggle wireframe mode" << std::endl
-         << " <drag>+<left button>: rotate model" << std::endl
-         << " <drag>+<right button>: move model" << std::endl
-         << " <drag>+<middle button>: zoom" << std::endl
-         << " <esc>: Quit" << std::endl
-         << " z, q, s, d : Move the light source position" << std::endl
-         << " r, R : Control the red level of the light source" << std::endl
-         << " g, G : Control the green level of the light source" << std::endl
-         << " b, B : Control the blue level of the light source" << std::endl
-         << " i, I : Control the intensity of the light source" << std::endl
-         << " t : Compute per vertex shadow" << std::endl
-         << " o : Compute per vertex AO" << std::endl << std::endl;
+        << appTitle << std::endl
+        << "Author: " << myName << std::endl << std::endl
+        << "Usage: ./main [<file.off>]" << std::endl
+        << "Commands:" << std::endl
+        << "------------------" << std::endl
+        << " ?: Print help" << std::endl
+        << " w: Toggle wireframe mode" << std::endl
+        << " <drag>+<left button>: rotate model" << std::endl
+        << " <drag>+<right button>: move model" << std::endl
+        << " <drag>+<middle button>: zoom" << std::endl
+        << " <esc>: Quit" << std::endl
+        << " z, q, s, d : Move the light source position" << std::endl
+        << " r : Red light source" << std::endl
+        << " g : Green light source" << std::endl
+        << " b : Blue light source" << std::endl
+        << " v : White light source" << std::endl
+        << " i, I : Control the intensity of the light source" << std::endl
+        << " t : Compute per vertex shadow" << std::endl
+        << " o : Compute per vertex AO" << std::endl << std::endl;
 }
 
 /* This function updates the shadow value in colorResponses by ray tracing */
@@ -196,9 +199,10 @@ void init (const char * modelFilename) {
         cerr << e.msg () << endl;
     }
 
-    lightSource = LightSource(Vec3f(1.0,0.0,0.0), Vec3f(1.0,1.0,1.0), 1.0);
+    lightSource = LightSource(Vec3f(LIGHT_POS), Vec3f(LIGHT_COL), LIGHT_INT);
     Vec3f lightPos = lightSource.getPosition();
     Vec3f lightColor = lightSource.getColor();
+    float intensity = lightSource.getIntensity();
     /* Material constants */
     glProgram->setUniform3f("kd", KD);
     glProgram->setUniform3f("matAlbedo", ALBEDO);
@@ -207,6 +211,7 @@ void init (const char * modelFilename) {
             lightColor[2]);
     glProgram->setUniform1f("alpha", ALPHA);
     glProgram->setUniform1f("f0", FZERO);
+    glProgram->setUniform1f("intensity", intensity);
     glProgram->setUniform1i("brdf_mode", GGX_MODE);
 
     /* Settting 4th compenent of colors as 1 */
@@ -302,10 +307,31 @@ void key (unsigned char keyPressed, int x, int y) {
         break;
         }
     case 'r': {
-        lightSource.addTheta(0.1);
-        Vec3f lightPos = lightSource.getPosition();
-        glProgram->setUniform3f("lightPos",
-            lightPos[0], lightPos[1], lightPos[2]);
+        lightSource.setColor(Vec3f(1.0,0.0,0.0));
+        Vec3f lightColor = lightSource.getColor();
+        glProgram->setUniform3f("lightColor", lightColor[0], lightColor[1],
+                lightColor[2]);
+        break;
+        }
+    case 'g': {
+        lightSource.setColor(Vec3f(0.0,1.0,0.0));
+        Vec3f lightColor = lightSource.getColor();
+        glProgram->setUniform3f("lightColor", lightColor[0], lightColor[1],
+                lightColor[2]);
+        break;
+        }
+    case 'b': {
+        lightSource.setColor(Vec3f(0.0,0.0,1.0));
+        Vec3f lightColor = lightSource.getColor();
+        glProgram->setUniform3f("lightColor", lightColor[0], lightColor[1],
+                lightColor[2]);
+        break;
+        }
+    case 'v': {
+        lightSource.setColor(Vec3f(0.5,0.5,0.5));
+        Vec3f lightColor = lightSource.getColor();
+        glProgram->setUniform3f("lightColor", lightColor[0], lightColor[1],
+                lightColor[2]);
         break;
         }
     case 27:
@@ -320,13 +346,13 @@ void key (unsigned char keyPressed, int x, int y) {
     case 't' :
         computePerVertexShadow();
         break;
-    case 'g' :
+    case 'o' :
         computePerVertexAO(100, 1.0);
         break;
     case 'n' :
         bvh->draw(colorResponses);
         break;
-    case 'b' :
+    case 'm' :
         bvh = new BVH(mesh);
         break;
     default:

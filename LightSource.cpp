@@ -24,6 +24,16 @@ Vec3f LightSource::getColor()
     return color;
 }
 
+float LightSource::getIntensity()
+{
+    return intensity;
+}
+
+void LightSource::setColor(Vec3f _color)
+{
+    color = _color;
+}
+
 void LightSource::addR(float r)
 {
     position[0] = std::fmax(0.0, position[0] + r);
