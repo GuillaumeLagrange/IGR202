@@ -12,10 +12,9 @@
 
 #define LIGHT_NUMBER 1
 #define M_PI 3.14159265359
-#define COOK_MODE 0
-#define GGX_MODE 1
-#define BLINN_MODE 2
-#define DIFFUSE_MODE 3
+#define COOK_MODE 1
+#define GGX_MODE 2
+#define BLINN_MODE 3
 
 struct LightSource {
     vec4 pos;
@@ -28,18 +27,21 @@ varying vec3 N; // fragment-wise normal
 varying vec4 C; // fragment-wise normal
 
 uniform vec3 kd;
+uniform vec3 ks;
 uniform vec3 matAlbedo;
 uniform float alpha;
 uniform float f0;
 uniform float intensity;
+uniform float shininess;
 uniform int brdf_mode;
 uniform vec3 lightPos;
 uniform vec3 lightColor;
 
-LightSource lightSources[3];
+LightSource lightSource;
 vec3 diffuse = vec3(C);
 vec3 spec = vec3(0.0, 0.0, 0.0);
 
+void blinn();
 float fresnel(vec3 wh, vec3 wi);
 float dCook(vec3 n, vec3 w);
 float gCook(vec3 n, vec3 wh, vec3 wi, vec3 wo);
@@ -51,22 +53,16 @@ void ggx();
 void main (void) {
     gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0);
 
-    lightSources[0].pos = vec4(lightPos, 1.0);
-    lightSources[0].color = vec4(lightColor, 1.0);
-    lightSources[0].intensity = intensity;
-
-    lightSources[1].pos = vec4(0.0, 1.5, 0.0, 1.0);
-    lightSources[1].color = vec4(0.0, 1.0, 0.0, 1.0);
-    lightSources[1].intensity = 3.0;
-
-    lightSources[2].pos = vec4(0.0, 0.0, 1.0, 1.0);
-    lightSources[2].color = vec4(0.0, 0.0, 1.0, 1.0);
-    lightSources[2].intensity = 3.0;
+    lightSource.pos = vec4(lightPos, 1.0);
+    lightSource.color = vec4(lightColor, 1.0);
+    lightSource.intensity = intensity;
 
     if (brdf_mode == COOK_MODE)
         cook();
     if (brdf_mode == GGX_MODE)
         ggx();
+    if (brdf_mode == BLINN_MODE)
+        blinn();
 
     vec4 color = vec4((spec + diffuse), 1.0);
 
@@ -76,6 +72,32 @@ void main (void) {
         color *= -5.0 * C.w;
 
     gl_FragColor += color;
+}
+
+void blinn()
+{
+    vec3 p = vec3 (gl_ModelViewMatrix * P);
+    vec3 n = normalize (gl_NormalMatrix * N);
+    vec3 wo = normalize (-p);
+
+    vec3 lightPos = vec3(gl_ModelViewMatrix * lightSource.pos);
+    vec3 wi = normalize(lightPos - p);
+    vec3 wh = normalize(wi + wo);
+    vec3 lightColor = vec3(lightSource.color);
+
+    /* Attenuation */
+    float attenuation = 1.0/(length(p - lightPos) * length(p - lightPos));
+
+    /* Diffuse */
+    vec3 f_d = kd/M_PI;
+    diffuse += attenuation * lightSource.intensity *
+        lightColor * dot(n, wi)* matAlbedo * f_d;
+
+    /* Specular */
+    vec3 r = 2.0*dot(wi, n)*n - wi;
+    vec3 f_s = ks * pow(dot(r, wo), shininess);
+    spec += attenuation * lightSource.intensity * dot(n, wi)
+        * f_s * lightColor;
 }
 
 float fresnel(vec3 wh, vec3 wi)
@@ -103,33 +125,27 @@ void cook()
     vec3 n = normalize (gl_NormalMatrix * N);
     vec3 wo = normalize (-p);
 
+    vec3 lightPos = vec3(gl_ModelViewMatrix * lightSource.pos);
+    vec3 wi = normalize(lightPos - p);
+    vec3 wh = normalize(wi + wo);
+    vec3 lightColor = vec3(lightSource.color);
 
-    /* Model parameters */
+    /* Attenuation */
+    float attenuation = 1.0/(length(p - lightPos) * length(p - lightPos));
 
-    for(int i = 0; i < LIGHT_NUMBER; i++){
-        vec3 lightPos = vec3(gl_ModelViewMatrix * lightSources[i].pos);
-        vec3 wi = normalize(lightPos - p);
-        vec3 wh = normalize(wi + wo);
-        vec3 lightColor = vec3(lightSources[i].color);
+    /* Diffuse */
+    vec3 f_d = kd/M_PI;
+    diffuse += attenuation * lightSource.intensity *
+        lightColor * dot(n, wi) * matAlbedo * f_d;
 
-        /* Attenuation */
-        float attenuation = 1.0/(length(p - lightPos) * length(p - lightPos));
-
-        /* Diffuse */
-        vec3 f_d = kd/M_PI;
-        diffuse += attenuation * lightSources[i].intensity *
-            lightColor * dot(n, wi)* matAlbedo * f_d;
-
-        /* Specular */
-        float f = fresnel(wh, wi);
-        float d = dCook(n, wh);
-        float g = gCook(n, wh, wi, wo);
-        float f_s = d * f * g / (4.0 * dot(n, wi) * dot(n,wo));
-        spec += attenuation * lightSources[i].intensity * dot(n, wi)
-            * f_s * lightColor;
-    }
+    /* Specular */
+    float f = fresnel(wh, wi);
+    float d = dCook(n, wh);
+    float g = gCook(n, wh, wi, wo);
+    float f_s = d * f * g / (4.0 * dot(n, wi) * dot(n,wo));
+    spec += attenuation * lightSource.intensity * dot(n, wi)
+        * f_s * lightColor;
 }
-
 
 float gGGX(vec3 n, vec3 w)
 {
@@ -150,29 +166,24 @@ void ggx()
     vec3 n = normalize (gl_NormalMatrix * N);
     vec3 wo = normalize (-p);
 
+    vec3 lightPos = vec3(gl_ModelViewMatrix * lightSource.pos);
+    vec3 wi = normalize(lightPos - p);
+    vec3 wh = normalize(wi + wo);
+    vec3 lightColor = vec3(lightSource.color);
 
-    /* Model parameters */
+    /* Attenuation */
+    float attenuation = 1.0/(length(p - lightPos) * length(p - lightPos));
 
-    for(int i = 0; i < LIGHT_NUMBER; i++){
-        vec3 lightPos = vec3(gl_ModelViewMatrix * lightSources[i].pos);
-        vec3 wi = normalize(lightPos - p);
-        vec3 wh = normalize(wi + wo);
-        vec3 lightColor = vec3(lightSources[i].color);
+    /* Diffuse */
+    vec3 f_d = kd/M_PI;
+    diffuse += attenuation * lightSource.intensity *
+        lightColor * dot(n, wi) * matAlbedo * f_d;
 
-        /* Attenuation */
-        float attenuation = 1.0/(length(p - lightPos) * length(p - lightPos));
-
-        /* Diffuse */
-        vec3 f_d = kd/M_PI;
-        diffuse += attenuation * lightSources[i].intensity *
-            lightColor * dot(n, wi)* matAlbedo * f_d;
-
-        /* Specular */
-        float f = fresnel(wh, wi);
-        float d = dGGX(n, wh);
-        float g = gGGX(n, wi) * gGGX(n, wo);
-        float f_s = d * f * g / (4.0 * dot(n, wi) * dot(n,wo));
-        spec += attenuation * lightSources[i].intensity * dot(n, wi)
-            * f_s * lightColor;
-    }
+    /* Specular */
+    float f = fresnel(wh, wi);
+    float d = dGGX(n, wh);
+    float g = gGGX(n, wi) * gGGX(n, wo);
+    float f_s = d * f * g / (4.0 * dot(n, wi) * dot(n,wo));
+    spec += attenuation * lightSource.intensity * dot(n, wi)
+        * f_s * lightColor;
 }

@@ -13,13 +13,16 @@ CXXFLAGS = $(FLAGS)
 
 OBJS = $(SRCS:.cpp=.o)
 
-.PHONY : clean run
+.PHONY : clean run %.off
 
 $(CIBLE): $(OBJS)
 	g++ $(LDFLAGS) -o $(CIBLE) $(OBJS) $(LIBS)
 
 run : $(CIBLE)
 	./$<
+
+%.off : $(CIBLE)
+	./$< models/$@
 
 clean:
 	rm -f  *~  $(CIBLE) $(OBJS)

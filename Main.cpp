@@ -35,11 +35,12 @@ using namespace std;
 #define ALPHA 0.8
 #define FZERO 0.02
 #define KD 1.0,1.0,1.0
+#define KS 1.0,1.0,1.0
 #define ALBEDO 0.15,0.15,0.15
-#define COOK_MODE 0
-#define GGX_MODE 1
-#define BLINN_MODE 2
-#define DIFFUSE_MODE 3
+#define SHININESS 1.0
+#define COOK_MODE 1
+#define GGX_MODE 2
+#define BLINN_MODE 3
 #define LIGHT_POS 1.0,0.0,0.0
 #define LIGHT_COL 1.0,0.0,0.0
 #define LIGHT_INT 1.0
@@ -60,6 +61,12 @@ static Mesh mesh;
 GLProgram * glProgram;
 
 int brdf_mode;
+float shininess;
+float alpha;
+float f0;
+Vec3f kd;
+Vec3f ks;
+Vec3f matAlbedo;
 GLuint vertexVBO;
 GLuint indexVBO;
 GLuint normalVBO;
@@ -82,6 +89,7 @@ void printUsage () {
         << " <drag>+<middle button>: zoom" << std::endl
         << " <esc>: Quit" << std::endl
         << " z, q, s, d : Move the light source position" << std::endl
+        << " 1, 2, 3 : GGX, Cook, Blinn mode" << std::endl
         << " r : Red light source" << std::endl
         << " g : Green light source" << std::endl
         << " b : Blue light source" << std::endl
@@ -201,20 +209,33 @@ void init (const char * modelFilename) {
         cerr << e.msg () << endl;
     }
 
-    brdf_mode = GGX_MODE;
+    /* Constant initialization */
+    brdf_mode = COOK_MODE;
+    f0 = FZERO;
+    alpha = alpha;
+    shininess = SHININESS;
+    kd = Vec3f(KD);
+    ks = Vec3f(KS);
+    matAlbedo = Vec3f(ALBEDO);
     lightSource = LightSource(Vec3f(LIGHT_POS), Vec3f(LIGHT_COL), LIGHT_INT);
     Vec3f lightPos = lightSource.getPosition();
     Vec3f lightColor = lightSource.getColor();
     float intensity = lightSource.getIntensity();
-    /* Material constants */
-    glProgram->setUniform3f("kd", KD);
-    glProgram->setUniform3f("matAlbedo", ALBEDO);
+
+    /* Uniform initialization */
+    glProgram->setUniform3f("kd", kd[0], kd[1], kd[2]);
+    glProgram->setUniform3f("ks", ks[0], ks[1], ks[2]);
+    glProgram->setUniform3f("matAlbedo", matAlbedo[0], matAlbedo[1],
+            matAlbedo[2]);
     glProgram->setUniform3f("lightPos", lightPos[0], lightPos[1], lightPos[2]);
     glProgram->setUniform3f("lightColor", lightColor[0], lightColor[1],
             lightColor[2]);
-    glProgram->setUniform1f("alpha", ALPHA);
-    glProgram->setUniform1f("f0", FZERO);
+
+    glProgram->setUniform1f("alpha", alpha);
+    glProgram->setUniform1f("f0", f0);
     glProgram->setUniform1f("intensity", intensity);
+    glProgram->setUniform1f("shininess", shininess);
+
     glProgram->setUniform1i("brdf_mode", brdf_mode);
 
     /* Settting 4th compenent of colors as 1 */
@@ -361,11 +382,6 @@ void key (unsigned char keyPressed, int x, int y) {
         }
     case '3': {
         brdf_mode = BLINN_MODE;
-        glProgram->setUniform1i("brdf_mode", brdf_mode);
-        break;
-        }
-    case '4': {
-        brdf_mode = DIFFUSE_MODE;
         glProgram->setUniform1i("brdf_mode", brdf_mode);
         break;
         }
