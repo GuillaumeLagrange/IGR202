@@ -14,7 +14,8 @@
 #define M_PI 3.14159265359
 #define COOK_MODE 0
 #define GGX_MODE 1
-#define DIFFUSE_MODE 2
+#define BLINN_MODE 2
+#define DIFFUSE_MODE 3
 
 struct LightSource {
     vec4 pos;

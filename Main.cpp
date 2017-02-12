@@ -38,7 +38,8 @@ using namespace std;
 #define ALBEDO 0.15,0.15,0.15
 #define COOK_MODE 0
 #define GGX_MODE 1
-#define DIFFUSE_MODE 2
+#define BLINN_MODE 2
+#define DIFFUSE_MODE 3
 #define LIGHT_POS 1.0,0.0,0.0
 #define LIGHT_COL 1.0,0.0,0.0
 #define LIGHT_INT 1.0
@@ -58,6 +59,7 @@ static Camera camera;
 static Mesh mesh;
 GLProgram * glProgram;
 
+int brdf_mode;
 GLuint vertexVBO;
 GLuint indexVBO;
 GLuint normalVBO;
@@ -199,6 +201,7 @@ void init (const char * modelFilename) {
         cerr << e.msg () << endl;
     }
 
+    brdf_mode = GGX_MODE;
     lightSource = LightSource(Vec3f(LIGHT_POS), Vec3f(LIGHT_COL), LIGHT_INT);
     Vec3f lightPos = lightSource.getPosition();
     Vec3f lightColor = lightSource.getColor();
@@ -212,7 +215,7 @@ void init (const char * modelFilename) {
     glProgram->setUniform1f("alpha", ALPHA);
     glProgram->setUniform1f("f0", FZERO);
     glProgram->setUniform1f("intensity", intensity);
-    glProgram->setUniform1i("brdf_mode", GGX_MODE);
+    glProgram->setUniform1i("brdf_mode", brdf_mode);
 
     /* Settting 4th compenent of colors as 1 */
     for (unsigned int i = 0; i < mesh.positions().size(); i++) {
@@ -332,6 +335,38 @@ void key (unsigned char keyPressed, int x, int y) {
         Vec3f lightColor = lightSource.getColor();
         glProgram->setUniform3f("lightColor", lightColor[0], lightColor[1],
                 lightColor[2]);
+        break;
+        }
+    case 'i': {
+        lightSource.addIntensity(-0.05);
+        float intensity = lightSource.getIntensity();
+        glProgram->setUniform1f("intensity", intensity);
+        break;
+        }
+    case 'I': {
+        lightSource.addIntensity(0.05);
+        float intensity = lightSource.getIntensity();
+        glProgram->setUniform1f("intensity", intensity);
+        break;
+        }
+    case '1': {
+        brdf_mode = GGX_MODE;
+        glProgram->setUniform1i("brdf_mode", brdf_mode);
+        break;
+        }
+    case '2': {
+        brdf_mode = COOK_MODE;
+        glProgram->setUniform1i("brdf_mode", brdf_mode);
+        break;
+        }
+    case '3': {
+        brdf_mode = BLINN_MODE;
+        glProgram->setUniform1i("brdf_mode", brdf_mode);
+        break;
+        }
+    case '4': {
+        brdf_mode = DIFFUSE_MODE;
+        glProgram->setUniform1i("brdf_mode", brdf_mode);
         break;
         }
     case 27:
