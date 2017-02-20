@@ -96,7 +96,9 @@ void printUsage () {
         << " v : White light source" << std::endl
         << " i, I : Control the intensity of the light source" << std::endl
         << " t : Compute per vertex shadow" << std::endl
-        << " o : Compute per vertex AO" << std::endl << std::endl;
+        << " a : Compute per vertex AO" << std::endl
+        << " h : Build BVH" << std::endl
+        << " y : Draw BVH" << std::endl << std::endl;
 }
 
 /* This function updates the shadow value in colorResponses by ray tracing */
@@ -397,14 +399,14 @@ void key (unsigned char keyPressed, int x, int y) {
     case 't' :
         computePerVertexShadow();
         break;
-    case 'o' :
+    case 'a' :
         computePerVertexAO(100, 1.0);
         break;
-    case 'n' :
-        bvh->draw(colorResponses);
-        break;
-    case 'm' :
+    case 'h' :
         bvh = new BVH(mesh);
+        break;
+    case 'y' :
+        bvh->draw(colorResponses);
         break;
     default:
         printUsage ();
