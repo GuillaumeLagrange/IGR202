@@ -105,18 +105,21 @@ float fresnel(vec3 wh, vec3 wi)
     return f0 + (1.0-f0)*pow((1.0-max(0.0, dot(wi,wh))),5);
 }
 
-float dCook(vec3 n, vec3 w)
+float dCook(vec3 n, vec3 wh)
 {
-    float ex = (dot(n, w)*dot(n, w) - 1.0)/(alpha*alpha*dot(n, w)*dot(n, w));
-    return (exp(ex))/(M_PI*alpha*alpha*pow(dot(n,w),4));
+    return max(0.0, exp((pow(dot(n, wh), 2) - 1.0)/pow(alpha*dot(n, wh), 2))/
+        (M_PI * pow(alpha, 2) * pow(dot(n, wh), 2)));
 }
 
 float gCook(vec3 n, vec3 wh, vec3 wi, vec3 wo)
 {
-    float ombrage = 2.0 * dot(n, wh) * dot(n, wi) / dot(wo, wh);
-    float masquage = 2.0 * dot(n, wh) * dot(n, wo) / dot(wo, wh);
+    float nDotOmega0 = max(0.0, dot(n, wo));
+    float nDotOmegaI = max(0.0, dot(n, wi));
+    float nDotOmegaH = max(0.0, dot(n, wh));
+    float omega0DotOmegaH = max(0.0, dot(wo, wh));
+    float omegaIDotOmegaH = max(0.0, dot(wh, wi));
 
-    return min(1, min(masquage, ombrage));
+    return min(1.0,min(2.0*nDotOmegaH*nDotOmegaI/omega0DotOmegaH,2.0*nDotOmega0*nDotOmegaH/omega0DotOmegaH));
 }
 
 void cook()
@@ -139,6 +142,9 @@ void cook()
         lightColor * dot(n, wi) * matAlbedo * f_d;
 
     /* Specular */
+    //float f = 1.0;
+    //float d = 1.0;
+    //float g = 1.0;
     float f = fresnel(wh, wi);
     float d = dCook(n, wh);
     float g = gCook(n, wh, wi, wo);

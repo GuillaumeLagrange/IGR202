@@ -32,8 +32,8 @@
 
 using namespace std;
 
-#define ALPHA 0.8
-#define FZERO 0.02
+#define ALPHA 0.5
+#define FZERO 0.10
 #define KD 1.0,1.0,1.0
 #define KS 1.0,1.0,1.0
 #define ALBEDO 0.15,0.15,0.15
@@ -212,7 +212,7 @@ void init (const char * modelFilename) {
     }
 
     /* Constant initialization */
-    brdf_mode = COOK_MODE;
+    brdf_mode = GGX_MODE;
     f0 = FZERO;
     alpha = alpha;
     shininess = SHININESS;
